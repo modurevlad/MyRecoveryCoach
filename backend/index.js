@@ -5,6 +5,9 @@ import "dotenv/config";
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// In-memory token for quick prototyping (best practice later: store in DB per user)
+let currentAccessToken = null;
+
 // Helper to fail fast if env vars are missing
 function mustEnv(name) {
   const v = process.env[name];
@@ -21,16 +24,16 @@ app.get("/", (req, res) => {
   res.send(`
     <h2>WHOOP OAuth Starter</h2>
     <p><a href="/auth/whoop">Connect WHOOP</a></p>
+    <p><a href="/dashboard">Dashboard</a> (shows data after you connect)</p>
   `);
 });
 
 // 1) Start OAuth flow
 app.get("/auth/whoop", (req, res) => {
-  // Later you should generate and validate a random state per user/session
+  // Later: generate per-session and validate on callback
   const state = "devstate123";
 
-  // Put scopes that your WHOOP dashboard supports / you selected.
-  // If WHOOP rejects this, reduce to the exact scopes your app has enabled.
+  // Scopes you already have enabled
   const scope = "read:recovery read:sleep read:workout";
 
   const authorizeUrl =
@@ -47,11 +50,8 @@ app.get("/auth/whoop", (req, res) => {
 // 2) OAuth callback: exchange code for tokens
 app.get("/auth/whoop/callback", async (req, res) => {
   const code = req.query.code;
-  const state = req.query.state;
 
-  if (!code) {
-    return res.status(400).send("Missing ?code in callback URL");
-  }
+  if (!code) return res.status(400).send("Missing ?code in callback URL");
 
   try {
     const tokenRes = await axios.post(
@@ -66,19 +66,21 @@ app.get("/auth/whoop/callback", async (req, res) => {
       { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
     );
 
-    // Token payload typically includes: access_token, refresh_token, expires_in, token_type
     const tokens = tokenRes.data;
 
-    console.log("WHOOP TOKENS:", tokens);
+    // Store access token in memory (prototype only)
+    currentAccessToken = tokens.access_token;
 
-    res.send(`
-      <h2>WHOOP OAuth Success</h2>
-      <p>Tokens printed below (and also in your terminal):</p>
-      <pre>${escapeHtml(JSON.stringify(tokens, null, 2))}</pre>
-      <p><a href="/me?access_token=${encodeURIComponent(
-        tokens.access_token
-      )}">Test API call</a></p>
-    `);
+    console.log("WHOOP TOKENS:", {
+      token_type: tokens.token_type,
+      expires_in: tokens.expires_in,
+      scope: tokens.scope,
+      has_access_token: Boolean(tokens.access_token),
+      has_refresh_token: Boolean(tokens.refresh_token),
+    });
+
+    // Redirect to dashboard (no token in URL)
+    return res.redirect("/dashboard");
   } catch (err) {
     const data = err?.response?.data;
     const status = err?.response?.status;
@@ -93,38 +95,72 @@ app.get("/auth/whoop/callback", async (req, res) => {
   }
 });
 
-// 3) Test API call (temporary dev helper)
-app.get("/me", async (req, res) => {
-  const accessToken = req.query.access_token;
-  if (!accessToken) return res.status(400).send("Missing access_token");
+// Dashboard: fetch & display WHOOP data using the stored token
+app.get("/dashboard", async (req, res) => {
+  if (!currentAccessToken) {
+    return res.send(`
+      <h2>WHOOP Dashboard</h2>
+      <p>No token yet. <a href="/auth/whoop">Connect WHOOP</a></p>
+    `);
+  }
 
   try {
-    // Example endpoint — adjust to a real WHOOP endpoint you have access to
-    const apiRes = await axios.get(
-      "https://api.prod.whoop.com/developer/v1/user/profile/basic",
-      { headers: { Authorization: `Bearer ${accessToken}` } }
-    );
+    const headers = { Authorization: `Bearer ${currentAccessToken}` };
 
-    res.send(`<pre>${escapeHtml(JSON.stringify(apiRes.data, null, 2))}</pre>`);
+    // v2 endpoints that match your scopes
+    const [recoveryRes, sleepRes, workoutRes] = await Promise.all([
+      axios.get("https://api.prod.whoop.com/developer/v2/recovery?limit=1", {
+        headers,
+      }),
+      axios.get(
+        "https://api.prod.whoop.com/developer/v2/activity/sleep?limit=1",
+        { headers }
+      ),
+      axios.get(
+        "https://api.prod.whoop.com/developer/v2/activity/workout?limit=5",
+        { headers }
+      ),
+    ]);
+
+    res.send(`
+      <h2>WHOOP Dashboard</h2>
+      <p><a href="/auth/whoop">Reconnect WHOOP</a></p>
+
+      <h3>Latest Recovery</h3>
+      <pre>${escapeHtml(JSON.stringify(recoveryRes.data, null, 2))}</pre>
+
+      <h3>Latest Sleep</h3>
+      <pre>${escapeHtml(JSON.stringify(sleepRes.data, null, 2))}</pre>
+
+      <h3>Recent Workouts</h3>
+      <pre>${escapeHtml(JSON.stringify(workoutRes.data, null, 2))}</pre>
+    `);
   } catch (err) {
-    const data = err?.response?.data;
-    const status = err?.response?.status;
-    res
-      .status(500)
-      .send(
-        `<pre>${escapeHtml(JSON.stringify({ status, data }, null, 2))}</pre>`
-      );
+    res.status(err?.response?.status || 500).send(
+      `<h2>WHOOP API Error</h2>
+<pre>${escapeHtml(
+        JSON.stringify(
+          {
+            status: err?.response?.status,
+            data: err?.response?.data || err.message,
+          },
+          null,
+          2
+        )
+      )}</pre>`
+    );
   }
 });
 
 app.listen(PORT, () => {
   console.log(`Local server: http://localhost:${PORT}`);
   console.log(`Start OAuth:   http://localhost:${PORT}/auth/whoop`);
+  console.log(`Dashboard:     http://localhost:${PORT}/dashboard`);
 });
 
 // tiny helper for safe HTML rendering
 function escapeHtml(str) {
-  return str
+  return String(str)
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")

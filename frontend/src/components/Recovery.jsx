@@ -1,47 +1,82 @@
-// frontend/src/components/Recovery.jsx
 import { useEffect, useState } from "react";
+
+function scoreColor(score) {
+  if (score == null) return "";
+  if (score >= 67) return "score-green";
+  if (score >= 34) return "score-yellow";
+  return "score-red";
+}
 
 export default function Recovery() {
   const [recovery, setRecovery] = useState(null);
-  const [IsLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetch("/api/recovery", { credentials: "include" }) // add credentials here
+    fetch("/api/recovery", { credentials: "include" })
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch recovery data");
         return res.json();
       })
       .then((data) => {
         setRecovery(data.records?.[0] ?? data);
-        setIsLoading(false);
+        setLoading(false);
       })
       .catch((err) => {
         setError(err.message);
-        setIsLoading(false);
+        setLoading(false);
       });
   }, []);
 
-  if (IsLoading) return <p>Loading recovery data...</p>;
-  if (error) return <p>Error: {error}</p>;
-  if (!recovery) return <p>No recovery data found.</p>;
+  if (loading) {
+    return (
+      <div className="loading">
+        <div className="spinner" />
+        Loading recovery data…
+      </div>
+    );
+  }
+  if (error) return <div className="error-msg">{error}</div>;
+  if (!recovery)
+    return <div className="empty-msg">No recovery data found.</div>;
+
+  const score = recovery.score?.recovery_score;
+  const hrv = recovery.score?.hrv_rmssd_milli;
+  const rhr = recovery.score?.resting_heart_rate;
+  const date = recovery.created_at?.slice(0, 10);
 
   return (
-    <div>
-      <h2>Latest Recovery</h2>
-      <p>
-        <strong>Score:</strong> {recovery.score?.recovery_score ?? "N/A"}%
-      </p>
-      <p>
-        <strong>HRV:</strong> {recovery.score?.hrv_rmssd_milli ?? "N/A"} ms
-      </p>
-      <p>
-        <strong>Resting HR:</strong>{" "}
-        {recovery.score?.resting_heart_rate ?? "N/A"} bpm
-      </p>
-      <p>
-        <strong>Date:</strong> {recovery.created_at?.slice(0, 10) ?? "N/A"}
-      </p>
+    <div className="recovery-card">
+      <h2 className="recovery-title">❤️‍🩹 Recovery</h2>
+      <div className="recovery-stats">
+        <div className="stat">
+          <span className="stat-label">Score</span>
+          <span className={`stat-value ${scoreColor(score)}`}>
+            {score ?? "N/A"}
+            {score != null && <span className="stat-unit">%</span>}
+          </span>
+        </div>
+        <div className="stat">
+          <span className="stat-label">HRV</span>
+          <span className="stat-value">
+            {hrv != null ? Math.round(hrv) : "N/A"}
+            {hrv != null && <span className="stat-unit">ms</span>}
+          </span>
+        </div>
+        <div className="stat">
+          <span className="stat-label">Resting HR</span>
+          <span className="stat-value">
+            {rhr ?? "N/A"}
+            {rhr != null && <span className="stat-unit">bpm</span>}
+          </span>
+        </div>
+        <div className="stat">
+          <span className="stat-label">Date</span>
+          <span className="stat-value" style={{ fontSize: "1.1rem" }}>
+            {date ?? "N/A"}
+          </span>
+        </div>
+      </div>
     </div>
   );
 }

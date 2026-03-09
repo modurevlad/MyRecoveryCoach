@@ -1,5 +1,3 @@
-import { useEffect, useState } from "react";
-
 function scoreColor(score) {
   if (score == null) return "";
   if (score >= 67) return "score-green";
@@ -7,38 +5,8 @@ function scoreColor(score) {
   return "score-red";
 }
 
-export default function Recovery() {
-  const [recovery, setRecovery] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    fetch("/api/recovery", { credentials: "include" })
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch recovery data");
-        return res.json();
-      })
-      .then((data) => {
-        setRecovery(data.records?.[0] ?? data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError(err.message);
-        setLoading(false);
-      });
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="loading">
-        <div className="spinner" />
-        Loading recovery data…
-      </div>
-    );
-  }
-  if (error) return <div className="error-msg">{error}</div>;
-  if (!recovery)
-    return <div className="empty-msg">No recovery data found.</div>;
+export default function Recovery({ data: recovery }) {
+  if (!recovery) return <div className="loading">Loading recovery data...</div>;
 
   const score = recovery.score?.recovery_score;
   const hrv = recovery.score?.hrv_rmssd_milli;
@@ -72,9 +40,7 @@ export default function Recovery() {
         </div>
         <div className="stat">
           <span className="stat-label">Date</span>
-          <span className="stat-value" style={{ fontSize: "1.1rem" }}>
-            {date ?? "N/A"}
-          </span>
+          <span className="stat-value stat-date">{date ?? "N/A"}</span>
         </div>
       </div>
     </div>

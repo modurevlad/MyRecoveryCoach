@@ -46,6 +46,16 @@ const WHOOP_CLIENT_ID = () => mustEnv("WHOOP_CLIENT_ID");
 const WHOOP_CLIENT_SECRET = () => mustEnv("WHOOP_CLIENT_SECRET");
 const WHOOP_REDIRECT_URI = () => mustEnv("WHOOP_REDIRECT_URI");
 
+//helper to redirect user to login when token expires
+async function getAccessToken(userId) {
+  const result = await pool.query(
+    "SELECT access_token FROM users WHERE id = $1",
+    [userId]
+  );
+  if (result.rows.length === 0) throw new Error("User not found");
+  return result.rows[0].access_token;
+}
+
 //ROUTES
 
 app.get("/auth/whoop", (req, res) => {
@@ -88,17 +98,27 @@ app.get("/auth/whoop/callback", async (req, res) => {
       "https://api.prod.whoop.com/developer/v1/user/profile/basic",
       { headers: { Authorization: `Bearer ${access_token}` } }
     );
+    console.log("WHOOP Profile:", JSON.stringify(profileRes.data, null, 2));
 
     const whoopUserId = String(profileRes.data.user_id);
+    const firstName = profileRes.data.first_name;
+    const lastName = profileRes.data.last_name;
+    const email = profileRes.data.email;
 
     // 3) Upsert user in database
     const result = await pool.query(
-      `INSERT INTO users (whoop_user_id, access_token, refresh_token)
-       VALUES ($1, $2, $3)
-       ON CONFLICT (whoop_user_id)
-       DO UPDATE SET access_token = $2, refresh_token = $3
-       RETURNING id`,
-      [whoopUserId, access_token, refresh_token ?? null]
+      `INSERT INTO users (whoop_user_id, access_token, refresh_token, name, email)
+   VALUES ($1, $2, $3, $4, $5)
+   ON CONFLICT (whoop_user_id)
+   DO UPDATE SET access_token = $2, refresh_token = $3, name = $4, email = $5
+   RETURNING id`,
+      [
+        whoopUserId,
+        access_token,
+        refresh_token ?? null,
+        `${firstName} ${lastName}`,
+        email,
+      ]
     );
 
     // 4) Save user ID in session
@@ -116,11 +136,28 @@ app.get("/api/status", async (req, res) => {
   if (!req.session.userId) {
     return res.json({ authenticated: false });
   }
-  const result = await pool.query("SELECT id FROM users WHERE id = $1", [
-    req.session.userId,
-  ]);
-  res.json({ authenticated: result.rows.length > 0 });
+
+  try {
+    const token = await getAccessToken(req.session.userId);
+
+    // Verify token is still valid
+    await axios.get(
+      "https://api.prod.whoop.com/developer/v1/user/profile/basic",
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    res.json({ authenticated: true });
+  } catch (err) {
+    if (err?.response?.status === 401) {
+      // Token expired, destroy session
+      req.session.destroy();
+      return res.json({ authenticated: false, reason: "token_expired" });
+    }
+    res.json({ authenticated: true });
+  }
 });
+
+///RECOVERY ENDPOINT
 
 app.get("/api/recovery", async (req, res) => {
   if (!req.session.userId) {
@@ -149,6 +186,8 @@ app.get("/api/recovery", async (req, res) => {
   }
 });
 
+///SLEEP ENDPOINT
+
 app.get("/api/sleep", async (req, res) => {
   if (!req.session.userId) {
     return res.status(401).json({ error: "Not authenticated" });
@@ -176,6 +215,8 @@ app.get("/api/sleep", async (req, res) => {
   }
 });
 
+///Strain endpoints
+
 app.get("/api/strain", async (req, res) => {
   if (!req.session.userId) {
     return res.status(401).json({ error: "Not authenticated" });
@@ -202,6 +243,8 @@ app.get("/api/strain", async (req, res) => {
     });
   }
 });
+
+///GOAL ENDPOINTS
 
 app.post("/api/goal", async (req, res) => {
   if (!req.session.userId) {
@@ -235,6 +278,13 @@ app.get("/api/goal", async (req, res) => {
 
 ///AI PERSONALIZED PLAN ENDPOINT
 app.post("/api/chat", async (req, res) => {
+  const userResult = await pool.query(
+    "SELECT access_token, goal, name, age, weight_kg, height_cm FROM users WHERE id = $1",
+    [req.session.userId]
+  );
+
+  const { access_token, goal, name, age, weight_kg, height_cm } =
+    userResult.rows[0];
   if (!req.session.userId) {
     return res.status(401).json({ error: "Not authenticated" });
   }
@@ -295,7 +345,12 @@ app.post("/api/chat", async (req, res) => {
 You always have access to the user's latest WHOOP biometric data below. Use it to personalize every recommendation.
 
 --- USER PROFILE ---
+Name: ${name}
 Goal: ${goal}
+Age: ${age}
+Weight: ${weight_kg} kg
+Height: ${height_cm} cm
+BMI: ${(weight_kg / (height_cm / 100) ** 2).toFixed(1)}
 
 --- RECOVERY ---
 Recovery Score: ${recovery?.score?.recovery_score ?? "N/A"}%
@@ -364,6 +419,151 @@ app.get("/api/workouts/recent", async (req, res) => {
       error: err?.response?.data || err.message,
     });
   }
+});
+
+//PROFILE ENDPOINTS
+app.get("/api/profile", async (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+
+  const result = await pool.query(
+    "SELECT name, age, weight_kg, height_cm, goal FROM users WHERE id = $1",
+    [req.session.userId]
+  );
+
+  res.json(result.rows[0]);
+});
+
+app.post("/api/profile", async (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+
+  const { name, age, weight_kg, height_cm } = req.body;
+
+  await pool.query(
+    `UPDATE users SET name = $1, age = $2, weight_kg = $3, height_cm = $4 WHERE id = $5`,
+    [name, age, weight_kg, height_cm, req.session.userId]
+  );
+
+  res.json({ success: true });
+});
+
+// Save a plan (chat history)
+app.post("/api/plans", async (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+
+  const {
+    workout_type,
+    messages,
+    recovery_score,
+    hrv,
+    resting_hr,
+    sleep_performance,
+  } = req.body;
+
+  const result = await pool.query(
+    `INSERT INTO plans (user_id, workout_type, messages, recovery_score, hrv, resting_hr, sleep_performance)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     RETURNING id, created_at`,
+    [
+      req.session.userId,
+      workout_type,
+      JSON.stringify(messages),
+      recovery_score,
+      hrv,
+      resting_hr,
+      sleep_performance,
+    ]
+  );
+
+  res.json(result.rows[0]);
+});
+
+// Get all saved plans for the user
+app.get("/api/plans", async (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+
+  const result = await pool.query(
+    `SELECT id, workout_type, created_at, messages, recovery_score, hrv, resting_hr, sleep_performance
+     FROM plans
+     WHERE user_id = $1
+     ORDER BY created_at DESC
+     LIMIT 10`,
+    [req.session.userId]
+  );
+
+  res.json(result.rows);
+});
+
+// Get a single plan
+app.get("/api/plans/:id", async (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+
+  const result = await pool.query(
+    `SELECT id, workout_type, created_at, messages
+     FROM plans
+     WHERE id = $1 AND user_id = $2`,
+    [req.params.id, req.session.userId]
+  );
+
+  if (result.rows.length === 0) {
+    return res.status(404).json({ error: "Plan not found" });
+  }
+
+  res.json(result.rows[0]);
+});
+
+app.put("/api/plans/:id", async (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+
+  const { messages } = req.body;
+
+  await pool.query(
+    `UPDATE plans SET messages = $1 WHERE id = $2 AND user_id = $3`,
+    [JSON.stringify(messages), req.params.id, req.session.userId]
+  );
+
+  res.json({ success: true });
+});
+
+// Delete a plan
+app.delete("/api/plans/:id", async (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+
+  await pool.query("DELETE FROM plans WHERE id = $1 AND user_id = $2", [
+    req.params.id,
+    req.session.userId,
+  ]);
+
+  res.json({ success: true });
+});
+
+// Rename a plan
+app.patch("/api/plans/:id", async (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+
+  const { name } = req.body;
+
+  await pool.query(
+    "UPDATE plans SET name = $1 WHERE id = $2 AND user_id = $3",
+    [name, req.params.id, req.session.userId]
+  );
+
+  res.json({ success: true });
 });
 
 app.listen(PORT, () => {

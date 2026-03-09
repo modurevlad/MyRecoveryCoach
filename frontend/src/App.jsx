@@ -4,6 +4,7 @@ import ProfileSetup from "./components/ProfileSetup";
 import Recovery from "./components/Recovery";
 import Chat from "./components/Chat";
 import "./App.css";
+import Sleep from "./components/Sleep";
 
 export default function App() {
   const [authenticated, setAuthenticated] = useState(null);
@@ -11,6 +12,7 @@ export default function App() {
   const [profileLoading, setProfileLoading] = useState(true);
   const [goal, setGoal] = useState(null);
   const [recoveryData, setRecoveryData] = useState(null);
+  const [sleepData, setSleepData] = useState(null);
 
   useEffect(() => {
     fetch("/api/status", { credentials: "include" })
@@ -40,6 +42,11 @@ export default function App() {
     fetch("/api/recovery", { credentials: "include" })
       .then((res) => res.json())
       .then((data) => setRecoveryData(data.records?.[0] ?? null));
+
+    // Fetch sleep
+    fetch("/api/sleep", { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => setSleepData(data.records?.[0] ?? null));
   }, [authenticated]);
 
   // 1. Still checking auth status
@@ -105,6 +112,7 @@ export default function App() {
         Welcome back, {profile.name || "athlete"}! 👋
       </p>
       <Recovery data={recoveryData} />
+      <Sleep data={sleepData} />
       <Chat profile={profile} goal={goal} recoveryData={recoveryData} />
     </div>
   );

@@ -11,7 +11,13 @@ export default function Recovery({ data: recovery }) {
   const score = recovery.score?.recovery_score;
   const hrv = recovery.score?.hrv_rmssd_milli;
   const rhr = recovery.score?.resting_heart_rate;
-  const date = recovery.created_at?.slice(0, 10);
+  const date = recovery.created_at
+    ? new Date(recovery.created_at).toLocaleDateString("en-RO", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    : "N/A";
 
   return (
     <div className="recovery-card">

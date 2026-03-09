@@ -59,7 +59,6 @@ async function getAccessToken(userId) {
 //ROUTES
 
 app.get("/auth/whoop", (req, res) => {
-  // added read:profile
   const scope = "read:recovery read:sleep read:workout read:profile";
   const authorizeUrl =
     `https://api.prod.whoop.com/oauth/oauth2/auth` +
@@ -204,7 +203,7 @@ app.get("/api/sleep", async (req, res) => {
 
   try {
     const apiRes = await axios.get(
-      "https://api.prod.whoop.com/developer/v2/sleep?limit=1",
+      "https://api.prod.whoop.com/developer/v2/activity/sleep?limit=1",
       { headers: { Authorization: `Bearer ${result.rows[0].access_token}` } }
     );
     res.json(apiRes.data);

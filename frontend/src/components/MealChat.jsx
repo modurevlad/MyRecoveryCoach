@@ -15,11 +15,11 @@ export default function MealChat() {
   // Load today's meal plan on mount if it exists
   useEffect(() => {
     fetch("/api/meal-plans/today", { credentials: "include" })
-      .then((r) => r.json())
-      .then((d) => {
-        if (d) {
-          setMessages(d.messages);
-          setCurrentPlanId(d.id);
+      .then((res) => res.json())
+      .then((data) => {
+        if (data) {
+          setMessages(data.messages);
+          setCurrentPlanId(data.id);
         }
       });
   }, []);

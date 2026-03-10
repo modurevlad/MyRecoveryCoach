@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import GoalSelection from "./components/GoalSelection";
 import ProfileSetup from "./components/ProfileSetup";
 import Recovery from "./components/Recovery";
-import Chat from "./components/Chat";
+import WorkoutChat from "./components/WorkoutChat";
+import MealChat from "./components/MealChat";
 import "./App.css";
 import Sleep from "./components/Sleep";
 
@@ -104,16 +105,26 @@ export default function App() {
   // 6. Dashboard
   return (
     <div className="app">
-      <div className="dashboard-header">
-        <h1 className="app-title">MyRecoveryCoach</h1>
+      <header className="dashboard-header">
+        <div className="header-left">
+          <h1 className="app-title">MyRecoveryCoach</h1>
+          <p className="welcome-text">
+            Welcome back, {profile.name || "athlete"}! 👋
+          </p>
+        </div>
         <span className="goal-badge">🎯 {goal}</span>
+      </header>
+
+      <div className="dashboard-grid">
+        <div className="stats-row">
+          <Recovery data={recoveryData} />
+          <Sleep data={sleepData} />
+        </div>
+        <div className="chats-row">
+          <MealChat />
+          <WorkoutChat recoveryData={recoveryData} />
+        </div>
       </div>
-      <p className="welcome-text">
-        Welcome back, {profile.name || "athlete"}! 👋
-      </p>
-      <Recovery data={recoveryData} />
-      <Sleep data={sleepData} />
-      <Chat profile={profile} goal={goal} recoveryData={recoveryData} />
     </div>
   );
 }

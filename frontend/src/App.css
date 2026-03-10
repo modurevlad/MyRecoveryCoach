@@ -1,12 +1,42 @@
 /* ── Layout ── */
 .app {
   width: 100%;
-  max-width: 520px;
-  padding: 3rem 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem 2.5rem;
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 2rem;
+}
+
+/* ── Dashboard grid ── */
+.dashboard-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.stats-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.chats-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 900px) {
+  .stats-row,
+  .chats-row {
+    grid-template-columns: 1fr;
+  }
+
+  .app {
+    padding: 1.5rem 1rem;
+  }
 }
 
 /* ── Branding ── */
@@ -123,6 +153,14 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 .goal-badge {
@@ -149,6 +187,7 @@
   padding: 3rem 1.5rem;
   width: 100%;
   max-width: 520px;
+  margin: 0 auto;
 }
 
 .goal-heading {
@@ -206,6 +245,7 @@
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  min-width: 0;
 }
 
 .recovery-title {
@@ -290,7 +330,8 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 70vh;
+  height: 55vh;
+  min-height: 400px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -490,9 +531,8 @@
 /* ── Welcome text ── */
 .welcome-text {
   color: var(--text-muted);
-  font-size: 0.95rem;
-  width: 100%;
-  margin-top: -1rem;
+  font-size: 0.9rem;
+  margin: 0;
 }
 
 /* ── Profile setup ── */
@@ -572,6 +612,7 @@
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  min-width: 0;
 }
 
 .plan-section-title {

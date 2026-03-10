@@ -1,54 +1,41 @@
-function scoreColor(score) {
-  if (score == null) return "";
-  if (score >= 67) return "score-green";
-  if (score >= 34) return "score-yellow";
-  return "score-red";
-}
+import StatCard from "./StatCard";
 
 export default function Recovery({ data: recovery }) {
   if (!recovery) return <div className="loading">Loading recovery data...</div>;
 
-  const score = recovery.score?.recovery_score;
-  const hrv = recovery.score?.hrv_rmssd_milli;
-  const rhr = recovery.score?.resting_heart_rate;
   const date = recovery.created_at
     ? new Date(recovery.created_at).toLocaleDateString("en-RO", {
         day: "numeric",
         month: "long",
         year: "numeric",
       })
-    : "N/A";
+    : null;
 
   return (
-    <div className="recovery-card">
-      <h2 className="recovery-title">❤️‍🩹 Recovery</h2>
-      <div className="recovery-stats">
-        <div className="stat">
-          <span className="stat-label">Score</span>
-          <span className={`stat-value ${scoreColor(score)}`}>
-            {score ?? "N/A"}
-            {score != null && <span className="stat-unit">%</span>}
-          </span>
-        </div>
-        <div className="stat">
-          <span className="stat-label">HRV</span>
-          <span className="stat-value">
-            {hrv != null ? Math.round(hrv) : "N/A"}
-            {hrv != null && <span className="stat-unit">ms</span>}
-          </span>
-        </div>
-        <div className="stat">
-          <span className="stat-label">Resting HR</span>
-          <span className="stat-value">
-            {rhr ?? "N/A"}
-            {rhr != null && <span className="stat-unit">bpm</span>}
-          </span>
-        </div>
-        <div className="stat">
-          <span className="stat-label">Date</span>
-          <span className="stat-value stat-date">{date ?? "N/A"}</span>
-        </div>
-      </div>
-    </div>
+    <StatCard
+      title="❤️‍🩹 Recovery"
+      stats={[
+        {
+          label: "Score",
+          value: recovery.score?.recovery_score,
+          unit: "%",
+          colorThresholds: { green: 67, yellow: 34 },
+        },
+        {
+          label: "HRV",
+          value:
+            recovery.score?.hrv_rmssd_milli != null
+              ? Math.round(recovery.score.hrv_rmssd_milli)
+              : null,
+          unit: "ms",
+        },
+        {
+          label: "Resting HR",
+          value: recovery.score?.resting_heart_rate,
+          unit: "bpm",
+        },
+        { label: "Date", value: date, isDate: true },
+      ]}
+    />
   );
 }

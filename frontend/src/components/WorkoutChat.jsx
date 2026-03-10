@@ -28,17 +28,17 @@ export default function WorkoutChat({ recoveryData }) {
 
   useEffect(() => {
     fetch("/api/plans", { credentials: "include" })
-      .then((r) => r.json())
-      .then((d) => setPastPlans(d));
+      .then((res) => res.json())
+      .then((data) => setPastPlans(data));
 
     fetch("/api/plans/today", { credentials: "include" })
-      .then((r) => r.json())
-      .then((d) => {
-        if (d) {
-          setTodayPlan(d);
-          setWorkoutType(d.workout_type);
-          setMessages(d.messages);
-          setCurrentPlanId(d.id);
+      .then((res) => res.json())
+      .then((data) => {
+        if (data) {
+          setTodayPlan(data);
+          setWorkoutType(data.workout_type);
+          setMessages(data.messages);
+          setCurrentPlanId(data.id);
         }
       });
   }, []);

@@ -6,7 +6,7 @@ export default function ProfileSetup({ onComplete }) {
     weight_kg: "",
     height_cm: "",
   });
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
   const validate = () => {
@@ -27,14 +27,14 @@ export default function ProfileSetup({ onComplete }) {
       return;
     }
 
-    setLoading(true);
+    setIsLoading(true);
     await fetch("/api/profile", {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
-    setLoading(false);
+    setIsLoading(false);
     onComplete(form);
   };
 
@@ -91,8 +91,8 @@ export default function ProfileSetup({ onComplete }) {
           )}
         </div>
 
-        <button className="btn" onClick={handleSubmit} disabled={loading}>
-          {loading ? "Saving..." : "Continue"}
+        <button className="btn" onClick={handleSubmit} disabled={isLoading}>
+          {isLoading ? "Saving..." : "Continue"}
         </button>
       </div>
     </div>

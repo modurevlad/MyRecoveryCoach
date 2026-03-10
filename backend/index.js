@@ -339,7 +339,7 @@ app.post("/api/chat/meal", async (req, res) => {
     const sleep = sleepRes.data.records?.[0];
     const todayStr = new Date().toISOString().slice(0, 10);
     const todayWorkout = workoutsRes.data.records?.find(
-      (w) => w.start?.slice(0, 10) === todayStr
+      (workout) => workout.start?.slice(0, 10) === todayStr
     );
     const workoutCalories = todayWorkout?.score?.kilojoule
       ? Math.round(todayWorkout.score.kilojoule * 0.239)

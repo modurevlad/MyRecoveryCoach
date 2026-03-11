@@ -154,8 +154,6 @@ export default function WorkoutChat({ recoveryData }) {
           }
         }
       }
-      console.log("streaming ended");
-
       setIsLoading(false);
 
       const finalMessages = [

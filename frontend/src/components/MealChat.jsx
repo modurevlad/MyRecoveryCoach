@@ -4,7 +4,7 @@ export default function MealChat() {
   const [started, setStarted] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [currentPlanId, setCurrentPlanId] = useState(null);
   const bottomRef = useRef(null);
 
@@ -28,7 +28,7 @@ export default function MealChat() {
     setStarted(true);
     if (messages.length > 0) return;
 
-    setLoading(true);
+    setIsLoading(true);
     const firstMessage = {
       role: "user",
       content: "Generate my meal plan for today.",
@@ -42,8 +42,34 @@ export default function MealChat() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: [firstMessage] }),
       });
-      const data = await res.json();
-      setMessages([firstMessage, { role: "assistant", content: data.reply }]);
+      //streaming logic
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let fullReply = "";
+
+      setMessages([firstMessage, { role: "assistant", content: "" }]);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const lines = decoder.decode(value).split("\n");
+        for (const line of lines) {
+          if (line.startsWith("data: ") && line !== "data: [DONE]") {
+            try {
+              const { token } = JSON.parse(line.slice(6));
+              fullReply += token;
+              setMessages((prev) => [
+                ...prev.slice(0, -1),
+                { role: "assistant", content: fullReply },
+              ]);
+            } catch {
+              console.log("error streaming");
+            }
+          }
+        }
+      }
+      setIsLoading(false);
     } catch {
       setMessages([
         {
@@ -52,7 +78,7 @@ export default function MealChat() {
         },
       ]);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -84,13 +110,13 @@ export default function MealChat() {
   };
 
   const sendMessage = async () => {
-    if (!input.trim() || loading) return;
+    if (!input.trim() || isLoading) return;
 
     const userMessage = { role: "user", content: input.trim() };
     const updatedMessages = [...messages, userMessage];
     setMessages(updatedMessages);
     setInput("");
-    setLoading(true);
+    setIsLoading(true);
 
     try {
       const res = await fetch("/api/chat/meal", {
@@ -99,10 +125,37 @@ export default function MealChat() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: updatedMessages }),
       });
-      const data = await res.json();
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let fullReply = "";
+
+      setMessages([...updatedMessages, { role: "assistant", content: "" }]);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const lines = decoder.decode(value).split("\n");
+        for (const line of lines) {
+          if (line.startsWith("data: ") && line !== "data: [DONE]") {
+            try {
+              const { token } = JSON.parse(line.slice(6));
+              fullReply += token;
+              setMessages((prev) => [
+                ...prev.slice(0, -1),
+                { role: "assistant", content: fullReply },
+              ]);
+            } catch {
+              console.log("Error streaming");
+            }
+          }
+        }
+      }
+      setIsLoading(false);
+
       const finalMessages = [
         ...updatedMessages,
-        { role: "assistant", content: data.reply },
+        { role: "assistant", content: fullReply },
       ];
       setMessages(finalMessages);
     } catch {
@@ -111,7 +164,7 @@ export default function MealChat() {
         { role: "assistant", content: "Something went wrong." },
       ]);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -174,7 +227,7 @@ export default function MealChat() {
               <button
                 onClick={handleSave}
                 className="btn btn-save"
-                disabled={messages.length === 0 || loading}
+                disabled={messages.length === 0 || isLoading}
               >
                 Save Plan
               </button>
@@ -206,7 +259,7 @@ export default function MealChat() {
                 {msg.content}
               </div>
             ))}
-          {loading && (
+          {isLoading && (
             <div className="chat-bubble thinking">
               Generating your meal plan...
             </div>
@@ -225,7 +278,7 @@ export default function MealChat() {
           <button
             className="chat-send-btn"
             onClick={sendMessage}
-            disabled={!input.trim() || loading}
+            disabled={!input.trim() || isLoading}
           >
             Send
           </button>

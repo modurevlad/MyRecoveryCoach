@@ -42,6 +42,30 @@ function mustEnv(name) {
   return v;
 }
 
+async function streamGroqResponse(res, messages, systemMessage) {
+  const stream = await groq.chat.completions.create({
+    model: "llama-3.3-70b-versatile",
+    messages: [systemMessage, ...messages],
+    temperature: 1.2,
+    stream: true,
+  });
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+
+  for await (const chunk of stream) {
+    const token = chunk.choices[0]?.delta?.content || "";
+    if (token) {
+      res.write(`data: ${JSON.stringify({ token })}\n\n`);
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+  }
+
+  res.write("data: [DONE]\n\n");
+  res.end();
+}
+
 const WHOOP_CLIENT_ID = () => mustEnv("WHOOP_CLIENT_ID");
 const WHOOP_CLIENT_SECRET = () => mustEnv("WHOOP_CLIENT_SECRET");
 const WHOOP_REDIRECT_URI = () => mustEnv("WHOOP_REDIRECT_URI");
@@ -407,13 +431,7 @@ Guidelines:
 - If recovery > 66%: can include more complex carbs for energy`,
     };
 
-    const completion = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      messages: [systemMessage, ...messages],
-      temperature: 1.2,
-    });
-
-    res.json({ reply: completion.choices[0].message.content });
+    await streamGroqResponse(res, messages, systemMessage);
   } catch (err) {
     console.error("Meal chat error:", err?.response?.data || err.message);
     res.status(500).json({ error: err?.response?.data || err.message });
@@ -580,27 +598,7 @@ Guidelines:
 - When user asks to modify, only change what they ask`,
     };
 
-    //stream the response from groq
-    res.setHeader("Content-Type", "text/event-stream");
-    res.setHeader("Cache-Control", "no-cache");
-    res.setHeader("Connection", "keep-alive");
-
-    const stream = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      messages: [systemMessage, ...messages],
-      temperature: 1.2,
-      stream: true,
-    });
-
-    for await (const chunk of stream) {
-      const token = chunk.choices[0]?.delta?.content || "";
-      if (token) {
-        res.write(`data: ${JSON.stringify({ token })}\n\n`);
-        await new Promise((resolve) => setTimeout(resolve, 20));
-      }
-    }
-    res.write("data: [DONE]\n\n");
-    res.end();
+    await streamGroqResponse(res, messages, systemMessage);
   } catch (err) {
     console.error("Workout chat error:", err?.response?.data || err.message);
     res.status(500).json({ error: err?.response?.data || err.message });

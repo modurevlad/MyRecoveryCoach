@@ -105,11 +105,6 @@ export default function MealChat() {
         { role: "assistant", content: data.reply },
       ];
       setMessages(finalMessages);
-
-      // Auto-update if already saved
-      if (currentPlanId) {
-        await saveMealPlan(finalMessages, currentPlanId);
-      }
     } catch {
       setMessages([
         ...updatedMessages,
@@ -161,15 +156,38 @@ export default function MealChat() {
         <h2 className="plan-section-title">🍽️ Today's Meal Plan</h2>
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
           {currentPlanId ? (
-            <span className="saved-badge">✓ Saved</span>
+            <>
+              <span className="saved-badge">✓ Saved</span>
+              <button
+                onClick={() => {
+                  setCurrentPlanId(null);
+                  setMessages([]);
+                  setStarted(false);
+                }}
+                className="btn btn-danger btn-sm"
+              >
+                Discard
+              </button>
+            </>
           ) : (
-            <button
-              onClick={handleSave}
-              className="btn btn-save"
-              disabled={messages.length === 0 || loading}
-            >
-              Save Plan
-            </button>
+            <>
+              <button
+                onClick={handleSave}
+                className="btn btn-save"
+                disabled={messages.length === 0 || loading}
+              >
+                Save Plan
+              </button>
+              <button
+                onClick={() => {
+                  setMessages([]);
+                  setStarted(false);
+                }}
+                className="btn btn-danger btn-sm"
+              >
+                Discard
+              </button>
+            </>
           )}
           <button
             className="btn btn-outline btn-sm"

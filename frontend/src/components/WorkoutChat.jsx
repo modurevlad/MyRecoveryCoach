@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from "react";
+import { Pencil, Trash2, Check } from "lucide-react";
+import ConfirmModal from "./ConfirmModal";
 
 const WORKOUT_TYPES = [
   { value: "Push (chest, shoulders, triceps)", label: "Push 💪" },
@@ -8,18 +10,20 @@ const WORKOUT_TYPES = [
 ];
 
 // view: "closed" | "selecting" | "viewing_past" | "chat"
+
 export default function WorkoutChat({ recoveryData }) {
   const [view, setView] = useState("closed");
   const [workoutType, setWorkoutType] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [currentPlanId, setCurrentPlanId] = useState(null);
   const [todayPlan, setTodayPlan] = useState(null);
   const [pastPlans, setPastPlans] = useState([]);
   const [viewingPlan, setViewingPlan] = useState(null); // the past plan being previewed
   const [editingId, setEditingId] = useState(null);
   const [editingName, setEditingName] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState(null); // plan id to delete
   const bottomRef = useRef(null);
 
   useEffect(() => {
@@ -48,7 +52,7 @@ export default function WorkoutChat({ recoveryData }) {
     setCurrentPlanId(null);
     setMessages([]);
     setView("chat");
-    setLoading(true);
+    setIsLoading(true);
 
     const firstMessage = {
       role: "user",
@@ -74,18 +78,18 @@ export default function WorkoutChat({ recoveryData }) {
         },
       ]);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   const sendMessage = async () => {
-    if (!input.trim() || loading) return;
+    if (!input.trim() || isLoading) return;
 
     const userMessage = { role: "user", content: input.trim() };
     const updatedMessages = [...messages, userMessage];
     setMessages(updatedMessages);
     setInput("");
-    setLoading(true);
+    setIsLoading(true);
 
     try {
       const res = await fetch("/api/chat/workout", {
@@ -115,7 +119,7 @@ export default function WorkoutChat({ recoveryData }) {
         { role: "assistant", content: "Something went wrong." },
       ]);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -138,8 +142,8 @@ export default function WorkoutChat({ recoveryData }) {
     setCurrentPlanId(data.id);
     setTodayPlan({ id: data.id, workout_type: workoutType, messages });
     fetch("/api/plans", { credentials: "include" })
-      .then((r) => r.json())
-      .then((d) => setPastPlans(d));
+      .then((res) => res.json())
+      .then((data) => setPastPlans(data));
   };
 
   const commitPastPlan = () => {
@@ -152,13 +156,13 @@ export default function WorkoutChat({ recoveryData }) {
     setView("chat");
   };
 
-  const deletePlan = async (e, planId) => {
-    e.stopPropagation();
+  const deletePlan = async (planId) => {
     await fetch(`/api/plans/${planId}`, {
       method: "DELETE",
       credentials: "include",
     });
-    setPastPlans((prev) => prev.filter((p) => p.id !== planId));
+    setPastPlans((prev) => prev.filter((plan) => plan.id !== planId));
+    setDeleteTarget(null);
   };
 
   const startRename = (e, plan) => {
@@ -221,6 +225,124 @@ export default function WorkoutChat({ recoveryData }) {
             </button>
           </>
         )}
+        {pastPlans.filter((plan) => plan.id === todayPlan?.id).length > 0 && (
+          <div className="past-plans">
+            <p style={{ fontWeight: 600, marginBottom: "8px" }}>Today's Plan</p>
+            <div className="past-plans-list">
+              {pastPlans
+                .filter((plan) => plan.id === todayPlan?.id)
+                .map((plan) => (
+                  <div
+                    key={plan.id}
+                    className="past-plan-card"
+                    onClick={() => setView("chat")}
+                  >
+                    <div style={{ flex: 1 }}>
+                      <strong>{plan.name || plan.workout_type}</strong>
+                      {plan.recovery_score && (
+                        <small style={{ display: "block", color: "#666" }}>
+                          Recovery: {plan.recovery_score}% · HRV:{" "}
+                          {Math.round(plan.hrv)}ms
+                        </small>
+                      )}
+                      <small className="past-plan-date">
+                        {new Date(plan.created_at).toLocaleDateString()}
+                      </small>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
+        {pastPlans.length > 0 && (
+          <div className="past-plans">
+            <p style={{ fontWeight: 600, marginBottom: "8px" }}>Past Plans</p>
+            <div className="past-plans-list">
+              {pastPlans
+                .filter((plan) => plan.id !== todayPlan?.id)
+                .map((plan) => (
+                  <div
+                    key={plan.id}
+                    className="past-plan-card"
+                    onClick={() => {
+                      if (editingId !== plan.id) {
+                        setViewingPlan(plan);
+                        setView("viewing_past");
+                      }
+                    }}
+                  >
+                    <div style={{ flex: 1 }}>
+                      {editingId === plan.id ? (
+                        <input
+                          autoFocus
+                          value={editingName}
+                          onChange={(e) => setEditingName(e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") saveRename(e, plan.id);
+                            if (e.key === "Escape") setEditingId(null);
+                          }}
+                          style={{
+                            padding: "4px 8px",
+                            borderRadius: "4px",
+                            border: "1px solid #ddd",
+                            width: "100%",
+                          }}
+                        />
+                      ) : (
+                        <strong>{plan.name || plan.workout_type}</strong>
+                      )}
+                      {plan.recovery_score && (
+                        <small style={{ display: "block", color: "#666" }}>
+                          Recovery: {plan.recovery_score}% · HRV:{" "}
+                          {Math.round(plan.hrv)}ms
+                        </small>
+                      )}
+                      <small className="past-plan-date">
+                        {new Date(plan.created_at).toLocaleDateString()}
+                      </small>
+                    </div>
+                    <div
+                      style={{ display: "flex", gap: "6px" }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {editingId === plan.id ? (
+                        <button
+                          className="icon-btn success"
+                          onClick={(e) => saveRename(e, plan.id)}
+                        >
+                          <Check size={15} />
+                        </button>
+                      ) : (
+                        <button
+                          className="icon-btn"
+                          onClick={(e) => startRename(e, plan)}
+                        >
+                          <Pencil size={15} />
+                        </button>
+                      )}
+                      <button
+                        className="icon-btn danger"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteTarget(plan.id);
+                        }}
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
+        {deleteTarget && (
+          <ConfirmModal
+            message="Are you sure you want to delete this plan?"
+            onConfirm={() => deletePlan(deleteTarget)}
+            onCancel={() => setDeleteTarget(null)}
+          />
+        )}
       </div>
     );
   }
@@ -240,114 +362,16 @@ export default function WorkoutChat({ recoveryData }) {
         </div>
         <p className="plan-prompt">What are you training today?</p>
         <div className="workout-type-grid">
-          {WORKOUT_TYPES.map((w) => (
+          {WORKOUT_TYPES.map((workout) => (
             <button
-              key={w.value}
+              key={workout.value}
               className="workout-type-btn"
-              onClick={() => startChat(w.value)}
+              onClick={() => startChat(workout.value)}
             >
-              {w.label}
+              {workout.label}
             </button>
           ))}
         </div>
-
-        {pastPlans.length > 0 && (
-          <div className="past-plans">
-            <p style={{ fontWeight: 600, marginBottom: "8px" }}>Past Plans</p>
-            <div className="past-plans-list">
-              {pastPlans.map((plan) => (
-                <div
-                  key={plan.id}
-                  className="past-plan-card"
-                  onClick={() => {
-                    if (editingId !== plan.id) {
-                      setViewingPlan(plan);
-                      setView("viewing_past");
-                    }
-                  }}
-                >
-                  <div style={{ flex: 1 }}>
-                    {editingId === plan.id ? (
-                      <input
-                        autoFocus
-                        value={editingName}
-                        onChange={(e) => setEditingName(e.target.value)}
-                        onClick={(e) => e.stopPropagation()}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") saveRename(e, plan.id);
-                          if (e.key === "Escape") setEditingId(null);
-                        }}
-                        style={{
-                          padding: "4px 8px",
-                          borderRadius: "4px",
-                          border: "1px solid #ddd",
-                          width: "100%",
-                        }}
-                      />
-                    ) : (
-                      <strong>{plan.name || plan.workout_type}</strong>
-                    )}
-                    {plan.recovery_score && (
-                      <small style={{ display: "block", color: "#666" }}>
-                        Recovery: {plan.recovery_score}% · HRV:{" "}
-                        {Math.round(plan.hrv)}ms
-                      </small>
-                    )}
-                    <small className="past-plan-date">
-                      {new Date(plan.created_at).toLocaleDateString()}
-                    </small>
-                  </div>
-                  <div
-                    style={{ display: "flex", gap: "6px" }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {editingId === plan.id ? (
-                      <button
-                        onClick={(e) => saveRename(e, plan.id)}
-                        style={{
-                          padding: "4px 8px",
-                          background: "#22c55e",
-                          color: "white",
-                          border: "none",
-                          borderRadius: "6px",
-                          cursor: "pointer",
-                        }}
-                      >
-                        Save
-                      </button>
-                    ) : (
-                      <button
-                        onClick={(e) => startRename(e, plan)}
-                        style={{
-                          padding: "4px 8px",
-                          background: "#f3f4f6",
-                          border: "1px solid #ddd",
-                          borderRadius: "6px",
-                          cursor: "pointer",
-                        }}
-                      >
-                        ✏️
-                      </button>
-                    )}
-                    <button
-                      onClick={(e) => deletePlan(e, plan.id)}
-                      style={{
-                        padding: "4px 8px",
-                        background: "#fee2e2",
-                        color: "#ef4444",
-                        border: "none",
-                        borderRadius: "6px",
-                        cursor: "pointer",
-                      }}
-                    >
-                      🗑️
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     );
   }
@@ -361,7 +385,7 @@ export default function WorkoutChat({ recoveryData }) {
             className="btn btn-outline btn-sm"
             onClick={() => {
               setViewingPlan(null);
-              setView("selecting");
+              setView("closed");
             }}
           >
             ← Back
@@ -390,6 +414,7 @@ export default function WorkoutChat({ recoveryData }) {
   return (
     <div className="plan-section">
       <div className="chat-header">
+        <h2 className="plan-section-title">💪 Today's Workout</h2>
         <button
           className="btn btn-outline btn-sm"
           onClick={() => setView("closed")}
@@ -402,7 +427,7 @@ export default function WorkoutChat({ recoveryData }) {
         ) : (
           <button
             onClick={savePlan}
-            disabled={messages.length === 0 || loading}
+            disabled={messages.length === 0 || isLoading}
             className="btn btn-save"
           >
             Save Plan
@@ -418,7 +443,7 @@ export default function WorkoutChat({ recoveryData }) {
                 {msg.content}
               </div>
             ))}
-          {loading && <div className="chat-bubble thinking">Thinking...</div>}
+          {isLoading && <div className="chat-bubble thinking">Thinking...</div>}
           <div ref={bottomRef} />
         </div>
         <div className="chat-input-bar">
@@ -433,7 +458,7 @@ export default function WorkoutChat({ recoveryData }) {
           <button
             className="chat-send-btn"
             onClick={sendMessage}
-            disabled={!input.trim() || loading}
+            disabled={!input.trim() || isLoading}
           >
             Send
           </button>

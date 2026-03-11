@@ -1,10 +1,14 @@
 import { useState } from "react";
 
-export default function ProfileSetup({ onComplete }) {
+export default function ProfileSetup({
+  onComplete,
+  onCancel,
+  existingProfile,
+}) {
   const [form, setForm] = useState({
-    age: "",
-    weight_kg: "",
-    height_cm: "",
+    age: existingProfile?.age ?? "",
+    weight_kg: existingProfile?.weight_kg ?? "",
+    height_cm: existingProfile?.height_cm ?? "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -45,7 +49,9 @@ export default function ProfileSetup({ onComplete }) {
 
   return (
     <div className="profile-page">
-      <h2 className="profile-heading">Complete Your Profile</h2>
+      <h2 className="profile-heading">
+        {existingProfile ? "Edit Profile" : "Complete Your Profile"}
+      </h2>
       <p className="profile-subtext">
         This helps us personalize your plans more accurately.
       </p>
@@ -91,9 +97,20 @@ export default function ProfileSetup({ onComplete }) {
           )}
         </div>
 
-        <button className="btn" onClick={handleSubmit} disabled={isLoading}>
-          {isLoading ? "Saving..." : "Continue"}
-        </button>
+        <div style={{ display: "flex", gap: "8px" }}>
+          {onCancel && (
+            <button className="btn btn-outline" onClick={onCancel}>
+              Cancel
+            </button>
+          )}
+          <button className="btn" onClick={handleSubmit} disabled={isLoading}>
+            {isLoading
+              ? "Saving..."
+              : existingProfile
+              ? "Save Changes"
+              : "Continue"}
+          </button>
+        </div>
       </div>
     </div>
   );

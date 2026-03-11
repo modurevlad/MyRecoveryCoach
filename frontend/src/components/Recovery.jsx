@@ -3,14 +3,6 @@ import StatCard from "./StatCard";
 export default function Recovery({ data: recovery }) {
   if (!recovery) return <div className="loading">Loading recovery data...</div>;
 
-  const date = recovery.created_at
-    ? new Date(recovery.created_at).toLocaleDateString("en-RO", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      })
-    : null;
-
   return (
     <StatCard
       title="❤️‍🩹 Recovery"
@@ -34,7 +26,12 @@ export default function Recovery({ data: recovery }) {
           value: recovery.score?.resting_heart_rate,
           unit: "bpm",
         },
-        { label: "Date", value: date, isDate: true },
+        {
+          label: "Blood oxygen (SpO2)",
+          value: Math.round(recovery.score?.spo2_percentage),
+          unit: "%",
+          colorThresholds: { green: 90, yellow: 89 },
+        },
       ]}
     />
   );

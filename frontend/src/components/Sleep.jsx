@@ -3,14 +3,6 @@ import StatCard from "./StatCard";
 export default function Sleep({ data: sleep }) {
   if (!sleep) return <div className="loading">Loading sleep data...</div>;
 
-  const date = sleep.created_at
-    ? new Date(sleep.created_at).toLocaleDateString("en-RO", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      })
-    : null;
-
   const sleepMs =
     (sleep.score?.stage_summary?.total_in_bed_time_milli ?? 0) -
     (sleep.score?.stage_summary?.total_awake_time_milli ?? 0);
@@ -35,13 +27,14 @@ export default function Sleep({ data: sleep }) {
               ? Math.round(sleep.score.sleep_efficiency_percentage)
               : null,
           unit: "%",
+          colorThresholds: { green: 85, yellow: 70 },
         },
         {
           label: "Consistency",
           value: sleep.score?.sleep_consistency_percentage,
           unit: "%",
+          colorThresholds: { green: 90, yellow: 80 },
         },
-        { label: "Date", value: date, isDate: true },
       ]}
     />
   );

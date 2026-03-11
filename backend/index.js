@@ -649,8 +649,15 @@ app.post("/api/profile", async (req, res) => {
   const { name, age, weight_kg, height_cm } = req.body;
 
   await pool.query(
-    `UPDATE users SET name = $1, age = $2, weight_kg = $3, height_cm = $4 WHERE id = $5`,
-    [name, age, weight_kg, height_cm, req.session.userId]
+    `UPDATE users SET
+      age = $1,
+      weight_kg = $2,
+      height_cm = $3
+      ${name ? ", name = $4" : ""}
+     WHERE id = ${name ? "$5" : "$4"}`,
+    name
+      ? [age, weight_kg, height_cm, name, req.session.userId]
+      : [age, weight_kg, height_cm, req.session.userId]
   );
 
   res.json({ success: true });
@@ -714,7 +721,7 @@ app.get("/api/plans/today", async (req, res) => {
   }
 
   const result = await pool.query(
-    `SELECT id, workout_type, messages, recovery_score, hrv, resting_hr
+    `SELECT id, workout_type, messages, recovery_score, hrv, resting_hr, created_at
      FROM plans
      WHERE user_id = $1
      AND created_at >= CURRENT_DATE

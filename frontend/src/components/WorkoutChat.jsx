@@ -25,6 +25,7 @@ export default function WorkoutChat({ recoveryData }) {
   const [editingName, setEditingName] = useState("");
   const [deleteTarget, setDeleteTarget] = useState(null); // plan id to delete
   const bottomRef = useRef(null);
+  const savedStateRef = useRef(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -48,6 +49,8 @@ export default function WorkoutChat({ recoveryData }) {
   }, []);
 
   const startChat = async (type) => {
+    savedStateRef.current = { workoutType, messages, currentPlanId };
+
     setWorkoutType(type);
     setCurrentPlanId(null);
     setMessages([]);
@@ -67,8 +70,35 @@ export default function WorkoutChat({ recoveryData }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: [firstMessage] }),
       });
-      const data = await res.json();
-      setMessages([firstMessage, { role: "assistant", content: data.reply }]);
+
+      ///streaming logic
+      const reader = res.body.getReader(); // opens a reader on the stream
+      const decoder = new TextDecoder(); // converts raw bytes to text
+      let fullReply = "";
+
+      setMessages([firstMessage, { role: "assistant", content: "" }]);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const lines = decoder.decode(value).split("\n");
+        for (const line of lines) {
+          if (line.startsWith("data: ") && line !== "data: [DONE]") {
+            try {
+              const { token } = JSON.parse(line.slice(6));
+              fullReply += token;
+              setMessages((prev) => [
+                ...prev.slice(0, -1), // keep all messages except last
+                { role: "assistant", content: fullReply }, // replace last with updated content
+              ]);
+            } catch {
+              console.log("Error while streaming");
+            }
+          }
+        }
+      }
+      setIsLoading(false);
     } catch {
       setMessages([
         firstMessage,
@@ -98,13 +128,40 @@ export default function WorkoutChat({ recoveryData }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: updatedMessages }),
       });
-      const data = await res.json();
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let fullReply = "";
+
+      setMessages([...updatedMessages, { role: "assistant", content: "" }]);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const lines = decoder.decode(value).split("\n");
+        for (const line of lines) {
+          if (line.startsWith("data: ") && line !== "data: [DONE]") {
+            try {
+              const { token } = JSON.parse(line.slice(6));
+              fullReply += token;
+              setMessages((prev) => [
+                ...prev.slice(0, -1),
+                { role: "assistant", content: fullReply },
+              ]);
+            } catch {
+              console.log("Error while streaming");
+            }
+          }
+        }
+      }
+      console.log("streaming ended");
+
+      setIsLoading(false);
+
       const finalMessages = [
         ...updatedMessages,
-        { role: "assistant", content: data.reply },
+        { role: "assistant", content: fullReply },
       ];
-      setMessages(finalMessages);
-
       if (currentPlanId) {
         await fetch(`/api/plans/${currentPlanId}`, {
           method: "PUT",
@@ -123,7 +180,8 @@ export default function WorkoutChat({ recoveryData }) {
     }
   };
 
-  const savePlan = async () => {
+  const savePlan = async (msgsToSave) => {
+    const msgs = msgsToSave || messages;
     if (currentPlanId) return;
     const res = await fetch("/api/plans", {
       method: "POST",
@@ -131,7 +189,7 @@ export default function WorkoutChat({ recoveryData }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         workout_type: workoutType,
-        messages,
+        messages: msgs,
         recovery_score: recoveryData?.score?.recovery_score ?? null,
         hrv: recoveryData?.score?.hrv_rmssd_milli ?? null,
         resting_hr: recoveryData?.score?.resting_heart_rate ?? null,
@@ -140,7 +198,7 @@ export default function WorkoutChat({ recoveryData }) {
     });
     const data = await res.json();
     setCurrentPlanId(data.id);
-    setTodayPlan({ id: data.id, workout_type: workoutType, messages });
+    setTodayPlan({ id: data.id, workout_type: workoutType, messages: msgs });
     fetch("/api/plans", { credentials: "include" })
       .then((res) => res.json())
       .then((data) => setPastPlans(data));
@@ -417,7 +475,15 @@ export default function WorkoutChat({ recoveryData }) {
         <h2 className="plan-section-title">💪 Today's Workout</h2>
         <button
           className="btn btn-outline btn-sm"
-          onClick={() => setView("closed")}
+          onClick={() => {
+            if (!currentPlanId && savedStateRef.current) {
+              setWorkoutType(savedStateRef.current.workoutType);
+              setMessages(savedStateRef.current.messages);
+              setCurrentPlanId(savedStateRef.current.currentPlanId);
+              savedStateRef.current = null;
+            }
+            setView("closed");
+          }}
         >
           ✕ Close
         </button>
@@ -426,7 +492,7 @@ export default function WorkoutChat({ recoveryData }) {
           <span className="saved-badge">✓ Saved</span>
         ) : (
           <button
-            onClick={savePlan}
+            onClick={() => savePlan(messages)}
             disabled={messages.length === 0 || isLoading}
             className="btn btn-save"
           >

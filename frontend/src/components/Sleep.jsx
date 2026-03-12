@@ -33,7 +33,7 @@ export default function Sleep({ data: sleep }) {
           label: "Consistency",
           value: sleep.score?.sleep_consistency_percentage,
           unit: "%",
-          colorThresholds: { green: 90, yellow: 80 },
+          colorThresholds: { green: 90, yellow: 70 },
         },
       ]}
     />

@@ -252,7 +252,7 @@ export default function WorkoutChat({ recoveryData }) {
   if (view === "closed") {
     return (
       <div className="plan-section">
-        <h2 className="plan-section-title">💪 Today's Workout</h2>
+        <h2 className="plan-section-title">Today's Workout</h2>
         {todayPlan ? (
           <>
             <p className="plan-prompt">
@@ -408,7 +408,7 @@ export default function WorkoutChat({ recoveryData }) {
     return (
       <div className="plan-section">
         <div className="chat-header">
-          <h2 className="plan-section-title">💪 Today's Workout</h2>
+          <h2 className="plan-section-title">Today's Workout</h2>
           <button
             className="btn btn-outline btn-sm"
             onClick={() => setView("closed")}
@@ -470,7 +470,7 @@ export default function WorkoutChat({ recoveryData }) {
   return (
     <div className="plan-section">
       <div className="chat-header">
-        <h2 className="plan-section-title">💪 Today's Workout</h2>
+        <h2 className="plan-section-title">Today's Workout</h2>
         <button
           className="btn btn-outline btn-sm"
           onClick={() => {

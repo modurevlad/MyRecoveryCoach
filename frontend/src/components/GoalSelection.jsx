@@ -3,17 +3,17 @@ import { useState } from "react";
 const goals = [
   {
     value: "bulk",
-    label: "💪 Bulk",
+    label: "Bulk",
     description: "Build muscle and gain weight",
   },
   {
     value: "lose_weight",
-    label: "🔥 Lose Weight",
+    label: "Lose Weight",
     description: "Burn fat and lose weight",
   },
   {
     value: "maintain",
-    label: "⚖️ Maintain",
+    label: "Maintain",
     description: "Stay at current weight",
   },
 ];

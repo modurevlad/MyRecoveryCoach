@@ -5,7 +5,7 @@ export default function Recovery({ data: recovery }) {
 
   return (
     <StatCard
-      title="❤️‍🩹 Recovery"
+      title="Recovery"
       stats={[
         {
           label: "Score",

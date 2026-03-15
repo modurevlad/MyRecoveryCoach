@@ -11,7 +11,7 @@ export default function Sleep({ data: sleep }) {
 
   return (
     <StatCard
-      title="😴 Sleep"
+      title="Sleep"
       stats={[
         {
           label: "Score",

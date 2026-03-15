@@ -123,11 +123,13 @@ export default function App() {
         <div className="header-left">
           <h1 className="app-title">MyRecoveryCoach</h1>
           <p className="welcome-text">
-            Welcome back, {profile.name || "athlete"}! 👋
+            Welcome back, {profile.name || "athlete"}!
           </p>
         </div>
         <div className="header-right">
-          <span className="goal-badge">🎯 {goalLabels[goal] || goal}</span>
+          <span className="goal-badge">
+            Current plan: {goalLabels[goal] || goal}
+          </span>
           <button
             className="settings-btn"
             onClick={() => setShowSettings(true)}
@@ -155,9 +157,9 @@ export default function App() {
               <h3 className="settings-section-title">Goal</h3>
               <div className="settings-goal-grid">
                 {[
-                  { value: "bulk", label: "💪 Bulk" },
-                  { value: "lose_weight", label: "🔥 Lose Weight" },
-                  { value: "maintain", label: "⚖️ Maintain" },
+                  { value: "bulk", label: "Bulk" },
+                  { value: "lose_weight", label: "Lose Weight" },
+                  { value: "maintain", label: "Maintain" },
                 ].map((g) => (
                   <button
                     key={g.value}

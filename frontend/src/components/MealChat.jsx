@@ -178,7 +178,7 @@ export default function MealChat() {
   if (!started && messages.length === 0) {
     return (
       <div className="plan-section">
-        <h2 className="plan-section-title">🍽️ Today's Meal Plan</h2>
+        <h2 className="plan-section-title">Today's Meal Plan</h2>
         <p className="plan-prompt">
           Get a personalized meal plan based on your recovery and goals.
         </p>
@@ -192,7 +192,7 @@ export default function MealChat() {
   if (!started && messages.length > 0) {
     return (
       <div className="plan-section">
-        <h2 className="plan-section-title">🍽️ Today's Meal Plan</h2>
+        <h2 className="plan-section-title">Today's Meal Plan</h2>
         <p className="plan-prompt">You already have a meal plan for today.</p>
         <div style={{ display: "flex", gap: "8px" }}>
           <button className="btn" onClick={() => setStarted(true)}>
@@ -206,7 +206,7 @@ export default function MealChat() {
   return (
     <div className="plan-section">
       <div className="chat-header">
-        <h2 className="plan-section-title">🍽️ Today's Meal Plan</h2>
+        <h2 className="plan-section-title">Today's Meal Plan</h2>
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
           {currentPlanId ? (
             <>

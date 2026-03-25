@@ -248,7 +248,7 @@ export default function WorkoutChat({ recoveryData }) {
     }
   };
 
-  // ── CLOSED ──────────────────────────────────────────────
+  //CLOSED
   if (view === "closed") {
     return (
       <div className="plan-section">
@@ -403,7 +403,7 @@ export default function WorkoutChat({ recoveryData }) {
     );
   }
 
-  // ── SELECTING ────────────────────────────────────────────
+  //SELECTING
   if (view === "selecting") {
     return (
       <div className="plan-section">
@@ -466,7 +466,7 @@ export default function WorkoutChat({ recoveryData }) {
     );
   }
 
-  // ── CHAT ─────────────────────────────────────────────────
+  //CHAT
   return (
     <div className="plan-section">
       <div className="chat-header">

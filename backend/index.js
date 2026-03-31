@@ -639,6 +639,30 @@ app.get("/api/workout-logs", async (req, res) => {
   res.json(result.rows);
 });
 
+app.get("/api/workout-logs/today", async (req, res) => {
+  if (!req.session.userId)
+    return res.status(401).json({ error: "Not authenticated" });
+
+  const result = await pool.query(
+    `SELECT id, exercises, notes FROM workout_logs WHERE user_id = $1 AND date = CURRENT_DATE LIMIT 1`,
+    [req.session.userId]
+  );
+  res.json(result.rows.length === 0 ? null : result.rows[0]);
+});
+
+//edit logged workout
+app.put("/api/workout-logs/today", async (req, res) => {
+  if (!req.session.userId)
+    return res.status(401).json({ error: "Not authenticated" });
+
+  const { exercises, notes } = req.body;
+  await pool.query(
+    `UPDATE workout_logs SET exercises = $1, notes = $2 WHERE user_id = $3 AND date = CURRENT_DATE`,
+    [JSON.stringify(exercises), notes, req.session.userId]
+  );
+  res.json({ success: true });
+});
+
 //PROFILE ENDPOINTS
 app.get("/api/profile", async (req, res) => {
   if (!req.session.userId) {

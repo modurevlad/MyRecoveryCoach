@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { Pencil, Trash2, Check } from "lucide-react";
 import ConfirmModal from "./ConfirmModal";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import WorkoutLogger from "./WorkoutLogger";
 
 const WORKOUT_TYPES = [
   { value: "Push (chest, shoulders, triceps)", label: "Push 💪" },
@@ -24,8 +26,10 @@ export default function WorkoutChat({ recoveryData }) {
   const [editingId, setEditingId] = useState(null);
   const [editingName, setEditingName] = useState("");
   const [deleteTarget, setDeleteTarget] = useState(null); // plan id to delete
+  const [isPastPlansOpen, setIsPastPlansOpen] = useState(false);
   const bottomRef = useRef(null);
   const savedStateRef = useRef(null);
+  const otherPlans = pastPlans.filter((plan) => plan.id !== todayPlan?.id);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -236,7 +240,9 @@ export default function WorkoutChat({ recoveryData }) {
       body: JSON.stringify({ name: editingName }),
     });
     setPastPlans((prev) =>
-      prev.map((p) => (p.id === planId ? { ...p, name: editingName } : p))
+      prev.map((plan) =>
+        plan.id === planId ? { ...plan, name: editingName } : plan
+      )
     );
     setEditingId(null);
   };
@@ -247,6 +253,22 @@ export default function WorkoutChat({ recoveryData }) {
       sendMessage();
     }
   };
+
+  // Helper to extract exercise names from AI message
+  function extractExercises(messages) {
+    const lastAssistant = [...messages]
+      .reverse()
+      .find((message) => message.role === "assistant");
+    if (!lastAssistant) return [];
+
+    const lines = lastAssistant.content.split("\n");
+    const exercises = [];
+    for (const line of lines) {
+      const match = line.match(/^\d+\.\s+(.+?):/);
+      if (match) exercises.push(match[1].trim());
+    }
+    return exercises;
+  }
 
   //CLOSED
   if (view === "closed") {
@@ -310,13 +332,24 @@ export default function WorkoutChat({ recoveryData }) {
             </div>
           </div>
         )}
-        {pastPlans.length > 0 && (
+        {otherPlans.length > 0 && (
           <div className="past-plans">
-            <p style={{ fontWeight: 600, marginBottom: "8px" }}>Past Plans</p>
-            <div className="past-plans-list">
-              {pastPlans
-                .filter((plan) => plan.id !== todayPlan?.id)
-                .map((plan) => (
+            <button
+              type="button"
+              className="past-plans-toggle"
+              onClick={() => setIsPastPlansOpen((prev) => !prev)}
+              aria-expanded={isPastPlansOpen}
+            >
+              <span style={{ fontWeight: 600 }}>Past Plans</span>
+              <span>{isPastPlansOpen ? <ChevronUp /> : <ChevronDown />}</span>
+            </button>
+            <div
+              className={`past-plans-drawer ${
+                isPastPlansOpen ? "past-plans-drawer-open" : ""
+              }`}
+            >
+              <div className="past-plans-list">
+                {otherPlans.map((plan) => (
                   <div
                     key={plan.id}
                     className="past-plan-card"
@@ -389,6 +422,7 @@ export default function WorkoutChat({ recoveryData }) {
                     </div>
                   </div>
                 ))}
+              </div>
             </div>
           </div>
         )}
@@ -528,6 +562,15 @@ export default function WorkoutChat({ recoveryData }) {
           </button>
         </div>
       </div>
+      {currentPlanId && !isLoading && (
+        <WorkoutLogger
+          workoutType={workoutType}
+          planId={currentPlanId}
+          recoveryScore={recoveryData?.score?.recovery_score}
+          suggestedExercises={extractExercises(messages)}
+          onSaved={() => console.log("workout logged")}
+        />
+      )}
     </div>
   );
 }

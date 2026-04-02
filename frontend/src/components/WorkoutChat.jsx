@@ -27,6 +27,8 @@ export default function WorkoutChat({ recoveryData }) {
   const [editingName, setEditingName] = useState("");
   const [deleteTarget, setDeleteTarget] = useState(null); // plan id to delete
   const [isPastPlansOpen, setIsPastPlansOpen] = useState(false);
+  const [planLog, setPlanLog] = useState(null);
+  const [showingLog, setShowingLog] = useState(false);
   const bottomRef = useRef(null);
   const savedStateRef = useRef(null);
   const otherPlans = pastPlans.filter((plan) => plan.id !== todayPlan?.id);
@@ -356,6 +358,13 @@ export default function WorkoutChat({ recoveryData }) {
                     onClick={() => {
                       if (editingId !== plan.id) {
                         setViewingPlan(plan);
+                        setShowingLog(false);
+                        setPlanLog(null);
+                        fetch(`/api/workout-logs/plan/${plan.id}`, {
+                          credentials: "include",
+                        })
+                          .then((r) => r.json())
+                          .then((d) => setPlanLog(d));
                         setView("viewing_past");
                       }
                     }}
@@ -481,21 +490,59 @@ export default function WorkoutChat({ recoveryData }) {
             ← Back
           </button>
           <span className="chat-workout-label">{viewingPlan.workout_type}</span>
-          <button className="btn btn-save" onClick={commitPastPlan}>
-            Commit to This Plan
-          </button>
-        </div>
-        <div className="chat-container">
-          <div className="chat-messages">
-            {viewingPlan.messages
-              .filter((m, i) => !(i === 0 && m.role === "user"))
-              .map((msg, i) => (
-                <div key={i} className={`chat-bubble ${msg.role}`}>
-                  {msg.content}
-                </div>
-              ))}
+          <div className="past-plan-view-actions">
+            {planLog && (
+              <button
+                className="btn btn-outline btn-sm"
+                onClick={() => setShowingLog(!showingLog)}
+              >
+                {showingLog ? "View Plan" : "View Logged Workout"}
+              </button>
+            )}
+            <button className="btn btn-save" onClick={commitPastPlan}>
+              Commit to This Plan
+            </button>
           </div>
         </div>
+
+        {showingLog && planLog ? (
+          <div className="past-plan-logged-container">
+            {planLog.recovery_score && (
+              <p className="past-plan-logged-recovery">
+                Recovery that day: {planLog.recovery_score}%
+              </p>
+            )}
+            {planLog.exercises.map((ex, i) => (
+              <div key={i} className="past-plan-exercise-log">
+                <strong className="past-plan-exercise-name">
+                  {ex.name}
+                </strong>
+                {ex.sets.map((set, j) => (
+                  <div key={j} className="past-plan-set-detail">
+                    Set {j + 1}: {set.reps} reps @ {set.weight_kg}kg
+                  </div>
+                ))}
+              </div>
+            ))}
+            {planLog.notes && (
+              <p className="past-plan-logged-notes">
+                <strong>Notes:</strong> {planLog.notes}
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="chat-container">
+            <div className="chat-messages">
+              {viewingPlan.messages
+                .filter((m, i) => !(i === 0 && m.role === "user"))
+                .map((msg, i) => (
+                  <div key={i} className={`chat-bubble ${msg.role}`}>
+                    {msg.content}
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   }

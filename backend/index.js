@@ -650,6 +650,17 @@ app.get("/api/workout-logs/today", async (req, res) => {
   res.json(result.rows.length === 0 ? null : result.rows[0]);
 });
 
+app.get("/api/workout-logs/plan/:planId", async (req, res) => {
+  if (!req.session.userId)
+    return res.status(401).json({ error: "Not authenticated" });
+
+  const result = await pool.query(
+    `SELECT * FROM workout_logs WHERE user_id = $1 AND plan_id = $2 LIMIT 1`,
+    [req.session.userId, req.params.planId]
+  );
+  res.json(result.rows.length === 0 ? null : result.rows[0]);
+});
+
 //edit logged workout
 app.put("/api/workout-logs/today", async (req, res) => {
   if (!req.session.userId)

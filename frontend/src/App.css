@@ -1009,6 +1009,47 @@
   margin-top: 0.25rem;
 }
 
+/* ── Past Plan View ── */
+.past-plan-view-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.past-plan-logged-container {
+  padding: 1rem;
+}
+
+.past-plan-logged-recovery {
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.past-plan-exercise-log {
+  margin-bottom: 0.75rem;
+  padding: 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+.past-plan-exercise-name {
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+  display: block;
+}
+
+.past-plan-set-detail {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.past-plan-logged-notes {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 0.5rem;
+}
+
 /* ── Workout Logger ── */
 .workout-logger {
   margin-top: 1.5rem;

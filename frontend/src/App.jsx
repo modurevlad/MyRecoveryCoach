@@ -7,6 +7,8 @@ import MealChat from "./components/MealChat";
 import "./App.css";
 import Sleep from "./components/Sleep";
 import { Settings } from "lucide-react";
+import TrainerDashboard from "./components/TrainerDashboard";
+import TrainerLogin from "./components/TrainerLogin";
 
 export default function App() {
   const [authenticated, setAuthenticated] = useState(null);
@@ -16,6 +18,8 @@ export default function App() {
   const [recoveryData, setRecoveryData] = useState(null);
   const [sleepData, setSleepData] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [userType, setUserType] = useState(null);
+  const [trainerData, setTrainerData] = useState(null);
 
   const goalLabels = {
     bulk: "Bulk",
@@ -74,17 +78,43 @@ export default function App() {
     );
   }
 
+  if (userType === "trainer" && !trainerData) {
+    return <TrainerLogin onAuthenticated={(data) => setTrainerData(data)} />;
+  }
+
+  if (userType === "trainer" && trainerData) {
+    return (
+      <TrainerDashboard
+        trainer={trainerData}
+        onLogout={() => {
+          fetch("/auth/trainer/logout", {
+            method: "POST",
+            credentials: "include",
+          });
+          setUserType(null);
+          setTrainerData(null);
+        }}
+      />
+    );
+  }
+
   // 2. Not authenticated
   if (!authenticated) {
     return (
       <div className="login-page">
         <h1 className="app-title">MyRecoveryCoach</h1>
-        <p className="login-tagline">
-          Connect your WHOOP to get personalized meal and workout plans.
-        </p>
-        <a href="http://localhost:3001/auth/whoop">
-          <button className="btn">Login with WHOOP</button>
-        </a>
+        <p className="login-tagline">Who are you?</p>
+        <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+          <a href="http://localhost:3001/auth/whoop">
+            <button className="btn">I'm an Athlete</button>
+          </a>
+          <button
+            className="btn btn-outline"
+            onClick={() => setUserType("trainer")}
+          >
+            I'm a Trainer
+          </button>
+        </div>
       </div>
     );
   }

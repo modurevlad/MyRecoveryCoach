@@ -8,6 +8,7 @@ import connectPgSimple from "connect-pg-simple";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import Groq from "groq-sdk";
+import bcrypt from "bcrypt";
 
 dotenv.config({ path: join(dirname(fileURLToPath(import.meta.url)), ".env") });
 
@@ -81,6 +82,323 @@ async function getAccessToken(userId) {
 }
 
 //ROUTES
+
+//trainer routes
+
+app.post("/auth/trainer/register", async (req, res) => {
+  const { email, name, password } = req.body;
+  if (!email || !name || !password)
+    return res.status(400).json({ error: "Missing fields" });
+
+  try {
+    const password_hash = await bcrypt.hash(password, 10);
+    const result = await pool.query(
+      `INSERT INTO trainers (email, name, password_hash) VALUES ($1, $2, $3) RETURNING id, email, name`,
+      [email, name, password_hash]
+    );
+    req.session.trainerId = result.rows[0].id;
+    res.json(result.rows[0]);
+  } catch (err) {
+    if (err.code === "23505")
+      return res.status(400).json({ error: "Email already registered" });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/auth/trainer/login", async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password)
+    return res.status(400).json({ error: "Missing fields" });
+
+  try {
+    const result = await pool.query("SELECT * FROM trainers WHERE email = $1", [
+      email,
+    ]);
+    if (result.rows.length === 0)
+      return res.status(401).json({ error: "Invalid email or password" });
+
+    const trainer = result.rows[0];
+    const match = await bcrypt.compare(password, trainer.password_hash);
+    if (!match)
+      return res.status(401).json({ error: "Invalid email or password" });
+
+    req.session.trainerId = trainer.id;
+    res.json({ id: trainer.id, name: trainer.name, email: trainer.email });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/auth/trainer/status", async (req, res) => {
+  if (!req.session.trainerId) return res.json({ authenticated: false });
+
+  const result = await pool.query(
+    "SELECT id, name, email FROM trainers WHERE id = $1",
+    [req.session.trainerId]
+  );
+  if (result.rows.length === 0) return res.json({ authenticated: false });
+  res.json({ authenticated: true, trainer: result.rows[0] });
+});
+
+app.post("/auth/trainer/logout", (req, res) => {
+  req.session.destroy();
+  res.json({ success: true });
+});
+
+//add athlete
+app.post("/trainer/athletes/add", async (req, res) => {
+  if (!req.session.trainerId)
+    return res.status(401).json({ error: "Not authenticated" });
+
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: "Missing email" });
+
+  const result = await pool.query(
+    "SELECT id, name, email FROM users WHERE email = $1",
+    [email]
+  );
+  if (result.rows.length === 0)
+    return res.status(404).json({ error: "No athlete found with that email" });
+
+  const athlete = result.rows[0];
+  if (athlete.trainer_id && athlete.trainer_id !== req.session.trainerId) {
+    return res.status(400).json({ error: "Athlete already has a trainer" });
+  }
+
+  await pool.query("UPDATE users SET trainer_id = $1 WHERE id = $2", [
+    req.session.trainerId,
+    athlete.id,
+  ]);
+  res.json({ success: true, athlete });
+});
+
+app.get("/trainer/athletes", async (req, res) => {
+  if (!req.session.trainerId)
+    return res.status(401).json({ error: "Not authenticated" });
+
+  const result = await pool.query(
+    "SELECT id, name, email FROM users WHERE trainer_id = $1",
+    [req.session.trainerId]
+  );
+  res.json(result.rows);
+});
+
+app.get("/trainer/athletes/:id/recovery", async (req, res) => {
+  if (!req.session.trainerId)
+    return res.status(401).json({ error: "Not authenticated" });
+
+  const athlete = await pool.query(
+    "SELECT access_token FROM users WHERE id = $1 AND trainer_id = $2",
+    [req.params.id, req.session.trainerId]
+  );
+  if (athlete.rows.length === 0)
+    return res.status(404).json({ error: "Athlete not found" });
+
+  try {
+    const apiRes = await axios.get(
+      "https://api.prod.whoop.com/developer/v2/recovery?limit=1",
+      { headers: { Authorization: `Bearer ${athlete.rows[0].access_token}` } }
+    );
+    res.json(apiRes.data);
+  } catch (err) {
+    res
+      .status(err?.response?.status || 500)
+      .json({ error: err?.response?.data || err.message });
+  }
+});
+
+app.get("/trainer/athletes/:id/sleep", async (req, res) => {
+  if (!req.session.trainerId)
+    return res.status(401).json({ error: "Not authenticated" });
+
+  const athlete = await pool.query(
+    "SELECT access_token FROM users WHERE id = $1 AND trainer_id = $2",
+    [req.params.id, req.session.trainerId]
+  );
+  if (athlete.rows.length === 0)
+    return res.status(404).json({ error: "Athlete not found" });
+
+  try {
+    const apiRes = await axios.get(
+      "https://api.prod.whoop.com/developer/v2/activity/sleep?limit=1",
+      { headers: { Authorization: `Bearer ${athlete.rows[0].access_token}` } }
+    );
+    res.json(apiRes.data);
+  } catch (err) {
+    res
+      .status(err?.response?.status || 500)
+      .json({ error: err?.response?.data || err.message });
+  }
+});
+
+app.get("/trainer/athletes/:id/plans", async (req, res) => {
+  if (!req.session.trainerId)
+    return res.status(401).json({ error: "Not authenticated" });
+
+  const athlete = await pool.query(
+    "SELECT id FROM users WHERE id = $1 AND trainer_id = $2",
+    [req.params.id, req.session.trainerId]
+  );
+  if (athlete.rows.length === 0)
+    return res.status(404).json({ error: "Athlete not found" });
+
+  const result = await pool.query(
+    `SELECT id, workout_type, name, created_at, recovery_score, hrv
+     FROM plans WHERE user_id = $1 ORDER BY created_at DESC LIMIT 10`,
+    [req.params.id]
+  );
+  res.json(result.rows);
+});
+
+app.post("/trainer/athletes/:id/chat", async (req, res) => {
+  if (!req.session.trainerId)
+    return res.status(401).json({ error: "Not authenticated" });
+
+  const { messages, workout_type } = req.body;
+
+  const athleteResult = await pool.query(
+    "SELECT access_token, goal, name, age, weight_kg, height_cm FROM users WHERE id = $1 AND trainer_id = $2",
+    [req.params.id, req.session.trainerId]
+  );
+  if (athleteResult.rows.length === 0)
+    return res.status(404).json({ error: "Athlete not found" });
+
+  const { access_token, goal, name, age } = athleteResult.rows[0];
+  const weightKg = parseFloat(athleteResult.rows[0].weight_kg);
+  const headers = { Authorization: `Bearer ${access_token}` };
+
+  const [recoveryRes, workoutLogsRes] = await Promise.all([
+    axios.get("https://api.prod.whoop.com/developer/v2/recovery?limit=8", {
+      headers,
+    }),
+    pool.query(
+      `SELECT workout_type, date, recovery_score, exercises, notes
+       FROM workout_logs WHERE user_id = $1 ORDER BY created_at DESC LIMIT 10`,
+      [req.params.id]
+    ),
+  ]);
+
+  const recoveryHistory = recoveryRes.data.records ?? [];
+  const recovery = recoveryHistory[0];
+  const workoutLogs = workoutLogsRes.rows;
+
+  const scored = recoveryHistory.filter((r) => r.score_state === "SCORED");
+  const avgHRV =
+    scored.reduce((sum, r) => sum + (r.score?.hrv_rmssd_milli ?? 0), 0) /
+    scored.length;
+  const avgRHR =
+    scored.reduce((sum, r) => sum + (r.score?.resting_heart_rate ?? 0), 0) /
+    scored.length;
+  const recoveryScore = recovery?.score?.recovery_score ?? null;
+  const todayHRV = recovery?.score?.hrv_rmssd_milli ?? null;
+  const todayRHR = recovery?.score?.resting_heart_rate ?? null;
+
+  let optimalStrainTarget = null;
+  let optimalStrainRange = null;
+  if (recoveryScore !== null) {
+    const baseTarget =
+      recoveryScore >= 80
+        ? 14.0
+        : recoveryScore >= 67
+        ? 13.0
+        : recoveryScore >= 50
+        ? 11.5
+        : recoveryScore >= 34
+        ? 10.5
+        : recoveryScore >= 20
+        ? 8.0
+        : 6.0;
+    const hrvRatio = todayHRV && avgHRV ? todayHRV / avgHRV : 1;
+    const hrvAdjustment = hrvRatio > 1.1 ? 0.5 : hrvRatio < 0.9 ? -0.5 : 0;
+    const rhrDiff = todayRHR && avgRHR ? todayRHR - avgRHR : 0;
+    const rhrAdjustment = rhrDiff > 3 ? -0.5 : rhrDiff < -3 ? 0.3 : 0;
+    optimalStrainTarget =
+      Math.round((baseTarget + hrvAdjustment + rhrAdjustment) * 10) / 10;
+    optimalStrainRange = `${Math.round((optimalStrainTarget - 2) * 10) / 10}–${
+      Math.round((optimalStrainTarget + 2) * 10) / 10
+    }`;
+  }
+
+  const today = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  const systemMessage = {
+    role: "system",
+    content: `You are MyRecoveryCoach, assisting a personal trainer. Today is ${today}.
+You are helping the trainer create a workout plan for their athlete.
+
+--- ATHLETE PROFILE ---
+Name: ${name}
+Goal: ${goal}
+Age: ${age}
+Weight: ${weightKg} kg
+
+--- TODAY'S RECOVERY ---
+Recovery Score: ${recoveryScore ?? "N/A"}%
+HRV: ${todayHRV ? Math.round(todayHRV * 10) / 10 : "N/A"} ms (8-day avg: ${
+      Math.round(avgHRV * 10) / 10
+    } ms)
+Resting Heart Rate: ${todayRHR ?? "N/A"} bpm (8-day avg: ${
+      Math.round(avgRHR * 10) / 10
+    } bpm)
+Optimal Strain Target: ${optimalStrainTarget ?? "N/A"}
+Optimal Strain Range: ${optimalStrainRange ?? "N/A"}
+
+--- PREVIOUS LOGGED SESSIONS ---
+${
+  workoutLogs.length > 0
+    ? workoutLogs
+        .map(
+          (log) =>
+            `${log.date} | ${log.workout_type} | Recovery: ${
+              log.recovery_score ?? "N/A"
+            }%\n` +
+            log.exercises
+              .map(
+                (ex) =>
+                  `  ${ex.name}: ${ex.sets
+                    .map((s) => `${s.reps} reps @ ${s.weight_kg}kg`)
+                    .join(", ")}`
+              )
+              .join("\n")
+        )
+        .join("\n\n")
+    : "No logged sessions yet."
+}
+
+Guidelines:
+- You are talking to the trainer, not the athlete
+- Always provide specific exercises, sets, reps and weights in kg
+- Reference previous logged sessions for progressive overload
+- Be concise — give a brief info about the athlete's recovery and sleep and then jump straight to the workout plan
+- Do not repeat the athlete's previous session back to the trainer in full
+- Only mention previous weights briefly when explaining progression
+- No motivational filler, no "keep in mind", no "monitor performance" disclaimers
+- When user asks to modify, only change what they ask
+- When generating a workout plan, format it as clean HTML using this structure:
+<div class="ai-workout">
+  <div class="ai-exercise">
+    <span class="ai-exercise-name">Barbell Bench Press</span>
+    <div class="ai-sets">
+      <span class="ai-set">Set 1: 8 reps @ 85kg</span>
+      <span class="ai-set">Set 2: 8 reps @ 85kg</span>
+      <span class="ai-set">Set 3: 6 reps @ 85kg</span>
+    </div>
+  </div>
+</div>
+- Only use HTML for the workout plan itself, use plain text for explanations before and after
+- Use no emojis
+- If recovery > 66%: high intensity, progressive overload
+- If recovery 33-66%: moderate intensity, maintain current weights
+- If recovery < 33%: light workout, reduce weights 10-15%`,
+  };
+
+  await streamGroqResponse(res, messages, systemMessage);
+});
 
 app.get("/auth/whoop", (req, res) => {
   const scope = "read:recovery read:sleep read:workout read:profile";
@@ -595,6 +913,18 @@ Guidelines:
 - Always explain why you are adjusting weights based on recovery
 - Keep responses concise, no excessive markdown
 - Use minimal emojis, max 2-3 per response
+- When generating a workout plan, format it as clean HTML using this structure:
+<div class="ai-workout">
+  <div class="ai-exercise">
+    <span class="ai-exercise-name">Barbell Bench Press</span>
+    <div class="ai-sets">
+      <span class="ai-set">Set 1: 8 reps @ 85kg</span>
+      <span class="ai-set">Set 2: 8 reps @ 85kg</span>
+      <span class="ai-set">Set 3: 6 reps @ 85kg</span>
+    </div>
+  </div>
+</div>
+- Only use HTML for the workout plan itself, use plain text for explanations before and after
 - When user asks to modify, only change what they ask`,
     };
 

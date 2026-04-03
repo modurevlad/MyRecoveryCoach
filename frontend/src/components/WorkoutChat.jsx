@@ -33,9 +33,19 @@ export default function WorkoutChat({ recoveryData }) {
   const savedStateRef = useRef(null);
   const otherPlans = pastPlans.filter((plan) => plan.id !== todayPlan?.id);
 
+  // Scroll to bottom when messages change
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Scroll to bottom when entering chat view
+  useEffect(() => {
+    if (view === "chat") {
+      setTimeout(() => {
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 0);
+    }
+  }, [view]);
 
   useEffect(() => {
     fetch("/api/plans", { credentials: "include" })
@@ -260,16 +270,13 @@ export default function WorkoutChat({ recoveryData }) {
   function extractExercises(messages) {
     const lastAssistant = [...messages]
       .reverse()
-      .find((message) => message.role === "assistant");
+      .find((m) => m.role === "assistant");
     if (!lastAssistant) return [];
 
-    const lines = lastAssistant.content.split("\n");
-    const exercises = [];
-    for (const line of lines) {
-      const match = line.match(/^\d+\.\s+(.+?):/);
-      if (match) exercises.push(match[1].trim());
-    }
-    return exercises;
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(lastAssistant.content, "text/html");
+    const names = doc.querySelectorAll(".ai-exercise-name");
+    return Array.from(names).map((el) => el.textContent.trim());
   }
 
   //CLOSED
@@ -514,9 +521,7 @@ export default function WorkoutChat({ recoveryData }) {
             )}
             {planLog.exercises.map((ex, i) => (
               <div key={i} className="past-plan-exercise-log">
-                <strong className="past-plan-exercise-name">
-                  {ex.name}
-                </strong>
+                <strong className="past-plan-exercise-name">{ex.name}</strong>
                 {ex.sets.map((set, j) => (
                   <div key={j} className="past-plan-set-detail">
                     Set {j + 1}: {set.reps} reps @ {set.weight_kg}kg
@@ -537,7 +542,11 @@ export default function WorkoutChat({ recoveryData }) {
                 .filter((m, i) => !(i === 0 && m.role === "user"))
                 .map((msg, i) => (
                   <div key={i} className={`chat-bubble ${msg.role}`}>
-                    {msg.content}
+                    {msg.role === "assistant" ? (
+                      <div dangerouslySetInnerHTML={{ __html: msg.content }} />
+                    ) : (
+                      msg.content
+                    )}
                   </div>
                 ))}
             </div>
@@ -585,7 +594,11 @@ export default function WorkoutChat({ recoveryData }) {
             .filter((m, i) => !(i === 0 && m.role === "user"))
             .map((msg, i) => (
               <div key={i} className={`chat-bubble ${msg.role}`}>
-                {msg.content}
+                {msg.role === "assistant" ? (
+                  <div dangerouslySetInnerHTML={{ __html: msg.content }} />
+                ) : (
+                  msg.content
+                )}
               </div>
             ))}
           {isLoading && <div className="chat-bubble thinking">Thinking...</div>}

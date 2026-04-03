@@ -6,6 +6,8 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": "http://localhost:3001", // points to your Express backend
+      "/auth": "http://localhost:3001",
+      "/trainer": "http://localhost:3001",
     },
   },
 });

@@ -8,9 +8,19 @@ export default function MealChat() {
   const [currentPlanId, setCurrentPlanId] = useState(null);
   const bottomRef = useRef(null);
 
+  // Scroll to bottom when messages change
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Scroll to bottom when showing chat view
+  useEffect(() => {
+    if (started) {
+      setTimeout(() => {
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 0);
+    }
+  }, [started]);
 
   // Load today's meal plan on mount if it exists
   useEffect(() => {

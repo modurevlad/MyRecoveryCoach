@@ -1031,6 +1031,21 @@ app.post("/api/profile", async (req, res) => {
 
   const { name, age, weight_kg, height_cm } = req.body;
 
+  const ageNum = Number(age);
+  const weightNum = Number(weight_kg);
+  const heightNum = Number(height_cm);
+
+  if (!Number.isFinite(ageNum) || ageNum < 10 || ageNum > 100)
+    return res.status(400).json({ error: "Age must be between 10 and 100" });
+  if (!Number.isFinite(weightNum) || weightNum < 30 || weightNum > 300)
+    return res
+      .status(400)
+      .json({ error: "Weight must be between 30 and 300 kg" });
+  if (!Number.isFinite(heightNum) || heightNum < 100 || heightNum > 250)
+    return res
+      .status(400)
+      .json({ error: "Height must be between 100 and 250 cm" });
+
   await pool.query(
     `UPDATE users SET
       age = $1,

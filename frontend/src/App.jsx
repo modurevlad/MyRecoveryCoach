@@ -20,6 +20,7 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [userType, setUserType] = useState(null);
   const [trainerData, setTrainerData] = useState(null);
+  const [banner, setBanner] = useState(null);
 
   const goalLabels = {
     bulk: "Bulk",
@@ -34,7 +35,7 @@ export default function App() {
         setAuthenticated(data.authenticated);
         if (!data.authenticated) setProfileLoading(false);
         if (data.reason === "token_expired") {
-          alert("Your session has expired. Please login again.");
+          setBanner("Your session has expired. Please log in again.");
         }
       });
   }, []);
@@ -67,6 +68,21 @@ export default function App() {
     if (showSettings) document.body.style.overflow = "hidden";
     else document.body.style.overflow = "";
   }, [showSettings]);
+
+  useEffect(() => {
+    if (!banner) return;
+    const t = setTimeout(() => setBanner(null), 5000);
+    return () => clearTimeout(t);
+  }, [banner]);
+
+  const bannerEl = banner && (
+    <div className="app-banner" role="alert">
+      <span>{banner}</span>
+      <button className="app-banner-close" onClick={() => setBanner(null)}>
+        ✕
+      </button>
+    </div>
+  );
 
   // 1. Still checking auth status
   if (authenticated === null) {
@@ -102,6 +118,7 @@ export default function App() {
   if (!authenticated) {
     return (
       <div className="login-page">
+        {bannerEl}
         <h1 className="app-title">MyRecoveryCoach</h1>
         <p className="login-tagline">Who are you?</p>
         <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>

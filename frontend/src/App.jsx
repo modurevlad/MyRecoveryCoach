@@ -167,6 +167,21 @@ export default function App() {
           >
             <Settings size={20} color="#9ca3af" />
           </button>
+          <button
+            className="btn btn-outline btn-sm"
+            onClick={async () => {
+              await fetch("/api/logout", {
+                method: "POST",
+                credentials: "include",
+              });
+              setAuthenticated(false);
+              setProfile(null);
+              setGoal(null);
+              setUserType(null);
+            }}
+          >
+            Logout
+          </button>
         </div>
       </header>
 

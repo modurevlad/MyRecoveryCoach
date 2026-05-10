@@ -145,6 +145,12 @@ app.post("/auth/trainer/logout", (req, res) => {
   res.json({ success: true });
 });
 
+//userlogout
+app.post("/api/logout", (req, res) => {
+  req.session.destroy();
+  res.json({ success: true });
+});
+
 //add athlete
 app.post("/trainer/athletes/add", async (req, res) => {
   if (!req.session.trainerId)

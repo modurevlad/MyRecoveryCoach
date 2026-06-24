@@ -5,10 +5,10 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import WorkoutLogger from "./WorkoutLogger";
 
 const WORKOUT_TYPES = [
-  { value: "Push (chest, shoulders, triceps)", label: "Push 💪" },
-  { value: "Pull (back, biceps)", label: "Pull 🏋️" },
-  { value: "Legs", label: "Legs 🦵" },
-  { value: "Cardio", label: "Cardio 🏃" },
+  { value: "Push (chest, shoulders, triceps)", label: "Push " },
+  { value: "Pull (back, biceps)", label: "Pull " },
+  { value: "Legs", label: "Legs " },
+  { value: "Cardio", label: "Cardio " },
 ];
 
 // view: "closed" | "selecting" | "viewing_past" | "chat"

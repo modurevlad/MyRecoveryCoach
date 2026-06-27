@@ -279,7 +279,7 @@ export default function WorkoutChat({ recoveryData }) {
         {todayPlan ? (
           <>
             <p className="plan-prompt">
-              You have a plan for today:{" "}
+              You have a plan for today:
               <strong>{todayPlan.workout_type}</strong>
             </p>
             <div className="workout-view-actions">

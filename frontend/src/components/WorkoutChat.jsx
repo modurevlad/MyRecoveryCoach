@@ -285,7 +285,7 @@ export default function WorkoutChat({ recoveryData }) {
               You have a plan for today:{" "}
               <strong>{todayPlan.workout_type}</strong>
             </p>
-            <div style={{ display: "flex", gap: "8px" }}>
+            <div className="workout-view-actions">
               <button className="btn" onClick={() => setView("chat")}>
                 View Today's Plan
               </button>
@@ -309,7 +309,7 @@ export default function WorkoutChat({ recoveryData }) {
         )}
         {pastPlans.filter((plan) => plan.id === todayPlan?.id).length > 0 && (
           <div className="past-plans">
-            <p style={{ fontWeight: 600, marginBottom: "8px" }}>Today's Plan</p>
+            <p className="past-plans-label">Today's Plan</p>
             <div className="past-plans-list">
               {pastPlans
                 .filter((plan) => plan.id === todayPlan?.id)
@@ -319,10 +319,10 @@ export default function WorkoutChat({ recoveryData }) {
                     className="past-plan-card"
                     onClick={() => setView("chat")}
                   >
-                    <div style={{ flex: 1 }}>
+                    <div className="past-plan-info">
                       <strong>{plan.name || plan.workout_type}</strong>
                       {plan.recovery_score && (
-                        <small style={{ display: "block", color: "#666" }}>
+                        <small className="past-plan-stats">
                           Recovery: {plan.recovery_score}% · HRV:{" "}
                           {Math.round(plan.hrv)}ms
                         </small>
@@ -344,7 +344,7 @@ export default function WorkoutChat({ recoveryData }) {
               onClick={() => setIsPastPlansOpen((prev) => !prev)}
               aria-expanded={isPastPlansOpen}
             >
-              <span style={{ fontWeight: 600 }}>Past Plans</span>
+              <span className="past-plans-label">Past Plans</span>
               <span>{isPastPlansOpen ? <ChevronUp /> : <ChevronDown />}</span>
             </button>
             <div
@@ -371,7 +371,7 @@ export default function WorkoutChat({ recoveryData }) {
                       }
                     }}
                   >
-                    <div style={{ flex: 1 }}>
+                    <div className="past-plan-info">
                       {editingId === plan.id ? (
                         <input
                           autoFocus
@@ -382,18 +382,13 @@ export default function WorkoutChat({ recoveryData }) {
                             if (e.key === "Enter") saveRename(e, plan.id);
                             if (e.key === "Escape") setEditingId(null);
                           }}
-                          style={{
-                            padding: "4px 8px",
-                            borderRadius: "4px",
-                            border: "1px solid #ddd",
-                            width: "100%",
-                          }}
+                          className="past-plan-rename-input"
                         />
                       ) : (
                         <strong>{plan.name || plan.workout_type}</strong>
                       )}
                       {plan.recovery_score && (
-                        <small style={{ display: "block", color: "#666" }}>
+                        <small className="past-plan-stats">
                           Recovery: {plan.recovery_score}% · HRV:{" "}
                           {Math.round(plan.hrv)}ms
                         </small>
@@ -403,7 +398,7 @@ export default function WorkoutChat({ recoveryData }) {
                       </small>
                     </div>
                     <div
-                      style={{ display: "flex", gap: "6px" }}
+                      className="past-plan-actions"
                       onClick={(e) => e.stopPropagation()}
                     >
                       {editingId === plan.id ? (

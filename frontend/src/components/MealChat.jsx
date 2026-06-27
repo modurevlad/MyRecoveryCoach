@@ -198,7 +198,7 @@ export default function MealChat() {
       <div className="plan-section">
         <h2 className="plan-section-title">Today's Meal Plan</h2>
         <p className="plan-prompt">You already have a meal plan for today.</p>
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div className="meal-view-actions">
           <button className="btn" onClick={() => setStarted(true)}>
             View Meal Plan
           </button>
@@ -211,7 +211,7 @@ export default function MealChat() {
     <div className="plan-section">
       <div className="chat-header">
         <h2 className="plan-section-title">Today's Meal Plan</h2>
-        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+        <div className="chat-header-actions">
           {currentPlanId ? (
             <>
               <span className="saved-badge">✓ Saved</span>

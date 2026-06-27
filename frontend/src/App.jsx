@@ -116,7 +116,7 @@ export default function App() {
         {bannerEl}
         <h1 className="app-title">MyRecoveryCoach</h1>
         <p className="login-tagline">Who are you?</p>
-        <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+        <div className="login-actions">
           <a href="http://localhost:3001/auth/whoop">
             <button className="btn">I'm an Athlete</button>
           </a>
@@ -252,7 +252,7 @@ export default function App() {
 
       <div className="dashboard-grid">
         <p className="biometrics-date">
-          Biometrics for{" "}
+          Data for{" "}
           {recoveryData
             ? new Date(recoveryData.created_at).toLocaleDateString("en-US", {
                 weekday: "long",

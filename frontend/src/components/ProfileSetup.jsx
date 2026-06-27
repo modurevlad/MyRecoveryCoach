@@ -97,7 +97,7 @@ export default function ProfileSetup({
           )}
         </div>
 
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div className="profile-form-actions">
           {onCancel && (
             <button className="btn btn-outline" onClick={onCancel}>
               Cancel

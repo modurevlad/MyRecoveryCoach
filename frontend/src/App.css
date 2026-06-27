@@ -1446,3 +1446,177 @@
   font-size: 13px;
   color: #9ca3af;
 }
+
+.login-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.workout-logged-header {
+  margin-top: 24px;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+
+.workout-logged-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.workout-logged-success-text {
+  color: var(--green);
+  margin: 0;
+}
+
+.workout-logged-exercise {
+  margin-bottom: 12px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.workout-logged-exercise-name {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.workout-logged-set {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.workout-logged-notes {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+
+.workout-logger-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.profile-form-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.meal-view-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.chat-header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.workout-view-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.past-plans-label {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.trainer-form-narrow {
+  max-width: 360px;
+  margin: 0 auto;
+}
+
+.trainer-login-toggle {
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-top: 12px;
+}
+
+.trainer-login-link {
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.trainer-header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.trainer-layout {
+  display: flex;
+  gap: 24px;
+}
+
+.trainer-sidebar {
+  width: 260px;
+  flex-shrink: 0;
+}
+
+.trainer-add-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.trainer-add-input {
+  flex: 1;
+}
+
+.trainer-athletes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.trainer-athlete-email {
+  display: block;
+  color: var(--text-muted);
+}
+
+.trainer-empty-msg {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.trainer-main {
+  flex: 1;
+}
+
+.trainer-athlete-stats-section {
+  margin-bottom: 16px;
+}
+
+.trainer-metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.trainer-metric-card {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.trainer-metric-label {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.trainer-metric-value {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.trainer-no-athlete {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

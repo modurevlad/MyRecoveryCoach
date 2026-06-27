@@ -42,10 +42,7 @@ export default function TrainerLogin({ onAuthenticated }) {
       <h1 className="app-title">MyRecoveryCoach</h1>
       <p className="login-tagline">Trainer Portal</p>
 
-      <div
-        className="profile-form"
-        style={{ maxWidth: "360px", margin: "0 auto" }}
-      >
+      <div className="profile-form trainer-form-narrow">
         {mode === "register" && (
           <div className="form-field">
             <label className="form-label">Name</label>
@@ -80,25 +77,18 @@ export default function TrainerLogin({ onAuthenticated }) {
           />
         </div>
 
-        {error && <p style={{ color: "#ef4444", fontSize: "14px" }}>{error}</p>}
+        {error && <p className="form-error">{error}</p>}
 
         <button className="btn" onClick={handleSubmit} disabled={loading}>
           {loading ? "Loading..." : mode === "login" ? "Login" : "Register"}
         </button>
 
-        <p
-          style={{
-            textAlign: "center",
-            fontSize: "14px",
-            color: "#666",
-            marginTop: "12px",
-          }}
-        >
+        <p className="trainer-login-toggle">
           {mode === "login"
             ? "Don't have an account?"
             : "Already have an account?"}{" "}
           <span
-            style={{ color: "#3b82f6", cursor: "pointer" }}
+            className="trainer-login-link"
             onClick={() => {
               setMode(mode === "login" ? "register" : "login");
               setError(null);

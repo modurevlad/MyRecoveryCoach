@@ -128,27 +128,26 @@ export default function TrainerDashboard({ trainer, onLogout }) {
     <div className="app">
       <div className="dashboard-header">
         <h1 className="app-title">MyRecoveryCoach</h1>
-        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+        <div className="trainer-header-actions">
           <span className="goal-badge">Trainer</span>
           <button className="btn btn-outline btn-sm" onClick={onLogout}>
             Logout
           </button>
         </div>
       </div>
-      <p className="welcome-text">Welcome, {trainer.name}! 👋</p>
+      <p className="welcome-text">Welcome, {trainer.name}!</p>
 
-      <div style={{ display: "flex", gap: "24px" }}>
-        <div style={{ width: "260px", flexShrink: 0 }}>
+      <div className="trainer-layout">
+        <div className="trainer-sidebar">
           <div className="plan-section">
             <h2 className="plan-section-title">Athletes</h2>
 
-            <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
+            <div className="trainer-add-row">
               <input
-                className="form-input"
+                className="form-input trainer-add-input"
                 value={addEmail}
                 onChange={(e) => setAddEmail(e.target.value)}
                 placeholder="athlete@email.com"
-                style={{ flex: 1 }}
               />
               <button
                 className="btn btn-sm"
@@ -158,13 +157,9 @@ export default function TrainerDashboard({ trainer, onLogout }) {
                 Add
               </button>
             </div>
-            {addError && (
-              <p style={{ color: "#ef4444", fontSize: "13px" }}>{addError}</p>
-            )}
+            {addError && <p className="form-error">{addError}</p>}
 
-            <div
-              style={{ display: "flex", flexDirection: "column", gap: "8px" }}
-            >
+            <div className="trainer-athletes-list">
               {athletes.map((a) => (
                 <div
                   key={a.id}
@@ -172,18 +167,15 @@ export default function TrainerDashboard({ trainer, onLogout }) {
                     selectedAthlete?.id === a.id ? "selected" : ""
                   }`}
                   onClick={() => selectAthlete(a)}
-                  style={{ cursor: "pointer" }}
                 >
                   <div>
                     <strong>{a.name}</strong>
-                    <small style={{ display: "block", color: "#666" }}>
-                      {a.email}
-                    </small>
+                    <small className="trainer-athlete-email">{a.email}</small>
                   </div>
                 </div>
               ))}
               {athletes.length === 0 && (
-                <p style={{ color: "#666", fontSize: "14px" }}>
+                <p className="trainer-empty-msg">
                   No athletes yet. Add one above.
                 </p>
               )}
@@ -191,118 +183,50 @@ export default function TrainerDashboard({ trainer, onLogout }) {
           </div>
         </div>
         {selectedAthlete ? (
-          <div style={{ flex: 1 }}>
-            <div className="plan-section" style={{ marginBottom: "16px" }}>
+          <div className="trainer-main">
+            <div className="plan-section trainer-athlete-stats-section">
               <h2 className="plan-section-title">{selectedAthlete.name}</h2>
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: "12px",
-                }}
-              >
-                <div
-                  style={{
-                    padding: "12px",
-                    border: "1px solid #333",
-                    borderRadius: "8px",
-                  }}
-                >
+              <div className="trainer-metrics-grid">
+                <div className="trainer-metric-card">
+                  <p className="trainer-metric-label">RECOVERY</p>
                   <p
-                    style={{
-                      color: "#666",
-                      fontSize: "12px",
-                      marginBottom: "4px",
-                    }}
-                  >
-                    RECOVERY
-                  </p>
-                  <p
-                    style={{
-                      fontSize: "24px",
-                      fontWeight: "bold",
-                      color:
-                        recovery?.score?.recovery_score >= 67
-                          ? "#22c55e"
-                          : recovery?.score?.recovery_score >= 34
-                          ? "#eab308"
-                          : "#ef4444",
-                    }}
+                    className={`trainer-metric-value ${
+                      recovery?.score?.recovery_score >= 67
+                        ? "score-green"
+                        : recovery?.score?.recovery_score >= 34
+                        ? "score-yellow"
+                        : "score-red"
+                    }`}
                   >
                     {recovery?.score?.recovery_score ?? "N/A"}%
                   </p>
                 </div>
-                <div
-                  style={{
-                    padding: "12px",
-                    border: "1px solid #333",
-                    borderRadius: "8px",
-                  }}
-                >
-                  <p
-                    style={{
-                      color: "#666",
-                      fontSize: "12px",
-                      marginBottom: "4px",
-                    }}
-                  >
-                    HRV
-                  </p>
-                  <p style={{ fontSize: "24px", fontWeight: "bold" }}>
+                <div className="trainer-metric-card">
+                  <p className="trainer-metric-label">HRV</p>
+                  <p className="trainer-metric-value">
                     {recovery?.score?.hrv_rmssd_milli
                       ? Math.round(recovery.score.hrv_rmssd_milli)
                       : "N/A"}{" "}
                     ms
                   </p>
                 </div>
-                <div
-                  style={{
-                    padding: "12px",
-                    border: "1px solid #333",
-                    borderRadius: "8px",
-                  }}
-                >
-                  <p
-                    style={{
-                      color: "#666",
-                      fontSize: "12px",
-                      marginBottom: "4px",
-                    }}
-                  >
-                    RESTING HR
-                  </p>
-                  <p style={{ fontSize: "24px", fontWeight: "bold" }}>
+                <div className="trainer-metric-card">
+                  <p className="trainer-metric-label">RESTING HR</p>
+                  <p className="trainer-metric-value">
                     {recovery?.score?.resting_heart_rate ?? "N/A"} bpm
                   </p>
                 </div>
-                <div
-                  style={{
-                    padding: "12px",
-                    border: "1px solid #333",
-                    borderRadius: "8px",
-                  }}
-                >
+                <div className="trainer-metric-card">
+                  <p className="trainer-metric-label">SLEEP</p>
                   <p
-                    style={{
-                      color: "#666",
-                      fontSize: "12px",
-                      marginBottom: "4px",
-                    }}
-                  >
-                    SLEEP
-                  </p>
-                  <p
-                    style={{
-                      fontSize: "24px",
-                      fontWeight: "bold",
-                      color:
-                        sleep?.score?.sleep_performance_percentage >= 85
-                          ? "#22c55e"
-                          : sleep?.score?.sleep_performance_percentage >= 70
-                          ? "#eab308"
-                          : "#ef4444",
-                    }}
+                    className={`trainer-metric-value ${
+                      sleep?.score?.sleep_performance_percentage >= 85
+                        ? "score-green"
+                        : sleep?.score?.sleep_performance_percentage >= 70
+                        ? "score-yellow"
+                        : "score-red"
+                    }`}
                   >
                     {sleep?.score?.sleep_performance_percentage ?? "N/A"}%
                   </p>
@@ -353,15 +277,8 @@ export default function TrainerDashboard({ trainer, onLogout }) {
             </div>
           </div>
         ) : (
-          <div
-            style={{
-              flex: 1,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <p style={{ color: "#666" }}>
+          <div className="trainer-no-athlete">
+            <p className="trainer-empty-msg">
               Select an athlete to view their data.
             </p>
           </div>

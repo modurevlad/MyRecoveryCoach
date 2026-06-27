@@ -103,15 +103,9 @@ export default function WorkoutLogger({
 
   if (alreadyLogged && !editing) {
     return (
-      <div
-        style={{
-          marginTop: "24px",
-          borderTop: "1px solid #333",
-          paddingTop: "16px",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <p style={{ color: "#22c55e", margin: 0 }}>
+      <div className="workout-logged-header">
+        <div className="workout-logged-meta">
+          <p className="workout-logged-success-text">
             ✓ Workout logged for today.
           </p>
           <button
@@ -122,20 +116,12 @@ export default function WorkoutLogger({
           </button>
         </div>
         {exercises.map((ex, i) => (
-          <div
-            key={i}
-            style={{
-              marginBottom: "12px",
-              padding: "10px",
-              border: "1px solid #333",
-              borderRadius: "8px",
-            }}
-          >
-            <strong style={{ display: "block", marginBottom: "6px" }}>
+          <div key={i} className="workout-logged-exercise">
+            <strong className="workout-logged-exercise-name">
               {ex.name}
             </strong>
             {ex.sets.map((set, j) => (
-              <div key={j} style={{ fontSize: "14px", color: "#aaa" }}>
+              <div key={j} className="workout-logged-set">
                 Set {j + 1}: {set.reps} reps @ {set.weight_kg}kg
               </div>
             ))}
@@ -143,9 +129,7 @@ export default function WorkoutLogger({
         ))}
 
         {notes && (
-          <p style={{ fontSize: "14px", color: "#888", marginTop: "8px" }}>
-            Notes: {notes}
-          </p>
+          <p className="workout-logged-notes">Notes: {notes}</p>
         )}
       </div>
     );
@@ -153,14 +137,8 @@ export default function WorkoutLogger({
 
   if (saved) {
     return (
-      <div
-        style={{
-          marginTop: "24px",
-          borderTop: "1px solid #333",
-          paddingTop: "16px",
-        }}
-      >
-        <p style={{ color: "#22c55e" }}>✓ Workout logged!</p>
+      <div className="workout-logged-header">
+        <p className="workout-logged-success-text">✓ Workout logged!</p>
       </div>
     );
   }
@@ -239,7 +217,7 @@ export default function WorkoutLogger({
           className="workout-notes-textarea"
         />
 
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div className="workout-logger-actions">
           <button className="btn" onClick={handleUpdate} disabled={saving}>
             {saving ? "Saving..." : "Save Changes"}
           </button>

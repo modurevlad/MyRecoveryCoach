@@ -60,7 +60,6 @@ export default function App() {
       .then((data) => setSleepData(data.records?.[0] ?? null));
   }, [authenticated]);
 
-  //disable scrolling when settings modal is open
   useEffect(() => {
     if (showSettings) document.body.style.overflow = "hidden";
     else document.body.style.overflow = "";

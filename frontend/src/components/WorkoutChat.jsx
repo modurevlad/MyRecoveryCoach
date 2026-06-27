@@ -11,8 +11,6 @@ const WORKOUT_TYPES = [
   { value: "Cardio", label: "Cardio " },
 ];
 
-// view: "closed" | "selecting" | "viewing_past" | "chat"
-
 export default function WorkoutChat({ recoveryData }) {
   const [view, setView] = useState("closed");
   const [workoutType, setWorkoutType] = useState(null);
@@ -262,7 +260,6 @@ export default function WorkoutChat({ recoveryData }) {
     }
   };
 
-  // Helper to extract exercise names from AI message
   function extractExercises(messages) {
     const lastAssistant = [...messages]
       .reverse()

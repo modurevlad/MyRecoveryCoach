@@ -12,12 +12,10 @@ export default function TrainerDashboard({ trainer, onLogout }) {
   const [isLoading, setIsLoading] = useState(false);
   const bottomRef = useRef(null);
 
-  // Scroll to bottom when messages change
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Scroll to bottom when an athlete is selected
   useEffect(() => {
     if (selectedAthlete) {
       setTimeout(() => {
@@ -140,7 +138,6 @@ export default function TrainerDashboard({ trainer, onLogout }) {
       <p className="welcome-text">Welcome, {trainer.name}! 👋</p>
 
       <div style={{ display: "flex", gap: "24px" }}>
-        {/* LEFT — athlete list */}
         <div style={{ width: "260px", flexShrink: 0 }}>
           <div className="plan-section">
             <h2 className="plan-section-title">Athletes</h2>
@@ -193,8 +190,6 @@ export default function TrainerDashboard({ trainer, onLogout }) {
             </div>
           </div>
         </div>
-
-        {/* RIGHT — athlete detail */}
         {selectedAthlete ? (
           <div style={{ flex: 1 }}>
             <div className="plan-section" style={{ marginBottom: "16px" }}>
@@ -317,7 +312,7 @@ export default function TrainerDashboard({ trainer, onLogout }) {
 
             <div className="plan-section">
               <h2 className="plan-section-title">
-                💬 AI Chat for {selectedAthlete.name}
+                AI Chat for {selectedAthlete.name}
               </h2>
               <div className="chat-container">
                 <div className="chat-messages">

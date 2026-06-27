@@ -22,10 +22,10 @@ export default function WorkoutChat({ recoveryData }) {
   const [currentPlanId, setCurrentPlanId] = useState(null);
   const [todayPlan, setTodayPlan] = useState(null);
   const [pastPlans, setPastPlans] = useState([]);
-  const [viewingPlan, setViewingPlan] = useState(null); // the past plan being previewed
+  const [viewingPlan, setViewingPlan] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [editingName, setEditingName] = useState("");
-  const [deleteTarget, setDeleteTarget] = useState(null); // plan id to delete
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [isPastPlansOpen, setIsPastPlansOpen] = useState(false);
   const [planLog, setPlanLog] = useState(null);
   const [showingLog, setShowingLog] = useState(false);
@@ -33,12 +33,10 @@ export default function WorkoutChat({ recoveryData }) {
   const savedStateRef = useRef(null);
   const otherPlans = pastPlans.filter((plan) => plan.id !== todayPlan?.id);
 
-  // Scroll to bottom when messages change
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Scroll to bottom when entering chat view
   useEffect(() => {
     if (view === "chat") {
       setTimeout(() => {
@@ -87,9 +85,8 @@ export default function WorkoutChat({ recoveryData }) {
         body: JSON.stringify({ messages: [firstMessage] }),
       });
 
-      ///streaming logic
-      const reader = res.body.getReader(); // opens a reader on the stream
-      const decoder = new TextDecoder(); // converts raw bytes to text
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
       let fullReply = "";
 
       setMessages([firstMessage, { role: "assistant", content: "" }]);
@@ -105,8 +102,8 @@ export default function WorkoutChat({ recoveryData }) {
               const { token } = JSON.parse(line.slice(6));
               fullReply += token;
               setMessages((prev) => [
-                ...prev.slice(0, -1), // keep all messages except last
-                { role: "assistant", content: fullReply }, // replace last with updated content
+                ...prev.slice(0, -1),
+                { role: "assistant", content: fullReply },
               ]);
             } catch {
               console.log("Error while streaming");
@@ -219,7 +216,6 @@ export default function WorkoutChat({ recoveryData }) {
   };
 
   const commitPastPlan = () => {
-    // Set the viewed past plan as today's active plan
     setWorkoutType(viewingPlan.workout_type);
     setMessages(viewingPlan.messages);
     setCurrentPlanId(viewingPlan.id);
@@ -279,7 +275,6 @@ export default function WorkoutChat({ recoveryData }) {
     return Array.from(names).map((el) => el.textContent.trim());
   }
 
-  //CLOSED
   if (view === "closed") {
     return (
       <div className="plan-section">
@@ -453,7 +448,6 @@ export default function WorkoutChat({ recoveryData }) {
     );
   }
 
-  //SELECTING
   if (view === "selecting") {
     return (
       <div className="plan-section">
@@ -482,7 +476,6 @@ export default function WorkoutChat({ recoveryData }) {
     );
   }
 
-  // ── VIEWING PAST PLAN ────────────────────────────────────
   if (view === "viewing_past") {
     return (
       <div className="plan-section">
@@ -556,7 +549,6 @@ export default function WorkoutChat({ recoveryData }) {
     );
   }
 
-  //CHAT
   return (
     <div className="plan-section">
       <div className="chat-header">

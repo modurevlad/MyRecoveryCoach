@@ -43,7 +43,6 @@ export default function App() {
   useEffect(() => {
     if (!authenticated) return;
 
-    // Fetch profile
     fetch("/api/profile", { credentials: "include" })
       .then((res) => res.json())
       .then((data) => {
@@ -52,12 +51,10 @@ export default function App() {
         setProfileLoading(false);
       });
 
-    // Fetch recovery
     fetch("/api/recovery", { credentials: "include" })
       .then((res) => res.json())
       .then((data) => setRecoveryData(data.records?.[0] ?? null));
 
-    // Fetch sleep
     fetch("/api/sleep", { credentials: "include" })
       .then((res) => res.json())
       .then((data) => setSleepData(data.records?.[0] ?? null));
@@ -84,7 +81,6 @@ export default function App() {
     </div>
   );
 
-  // 1. Still checking auth status
   if (authenticated === null) {
     return (
       <div className="loading">
@@ -114,7 +110,6 @@ export default function App() {
     );
   }
 
-  // 2. Not authenticated
   if (!authenticated) {
     return (
       <div className="login-page">
@@ -136,7 +131,6 @@ export default function App() {
     );
   }
 
-  // 3. Authenticated but profile still loading
   if (profileLoading) {
     return (
       <div className="loading">
@@ -146,7 +140,6 @@ export default function App() {
     );
   }
 
-  // 4. Profile incomplete
   if (!profile) {
     return (
       <ProfileSetup
@@ -158,12 +151,10 @@ export default function App() {
     );
   }
 
-  // 5. Goal not set
   if (!goal) {
     return <GoalSelection onGoalSet={setGoal} />;
   }
 
-  // 6. Dashboard
   return (
     <div className="app">
       <header className="dashboard-header">

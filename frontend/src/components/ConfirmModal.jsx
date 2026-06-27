@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 
 export default function ConfirmModal({ message, onConfirm, onCancel }) {
-  ///makes scrolling impossible while modal is open
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => {

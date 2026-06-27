@@ -8,12 +8,10 @@ export default function MealChat() {
   const [currentPlanId, setCurrentPlanId] = useState(null);
   const bottomRef = useRef(null);
 
-  // Scroll to bottom when messages change
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Scroll to bottom when showing chat view
   useEffect(() => {
     if (started) {
       setTimeout(() => {
@@ -22,7 +20,6 @@ export default function MealChat() {
     }
   }, [started]);
 
-  // Load today's meal plan on mount if it exists
   useEffect(() => {
     fetch("/api/meal-plans/today", { credentials: "include" })
       .then((res) => res.json())
@@ -52,7 +49,6 @@ export default function MealChat() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: [firstMessage] }),
       });
-      //streaming logic
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let fullReply = "";
@@ -94,7 +90,6 @@ export default function MealChat() {
 
   const saveMealPlan = async (msgs, planId) => {
     if (planId) {
-      // Update existing
       await fetch(`/api/meal-plans/${planId}`, {
         method: "PUT",
         credentials: "include",
@@ -102,7 +97,6 @@ export default function MealChat() {
         body: JSON.stringify({ messages: msgs }),
       });
     } else {
-      // Create new
       const res = await fetch("/api/meal-plans", {
         method: "POST",
         credentials: "include",

@@ -71,7 +71,6 @@ const WHOOP_CLIENT_ID = () => mustEnv("WHOOP_CLIENT_ID");
 const WHOOP_CLIENT_SECRET = () => mustEnv("WHOOP_CLIENT_SECRET");
 const WHOOP_REDIRECT_URI = () => mustEnv("WHOOP_REDIRECT_URI");
 
-//helper to redirect user to login when token expires
 async function getAccessToken(userId) {
   const result = await pool.query(
     "SELECT access_token FROM users WHERE id = $1",
@@ -80,10 +79,6 @@ async function getAccessToken(userId) {
   if (result.rows.length === 0) throw new Error("User not found");
   return result.rows[0].access_token;
 }
-
-//ROUTES
-
-//trainer routes
 
 app.post("/auth/trainer/register", async (req, res) => {
   const { email, name, password } = req.body;
@@ -145,13 +140,11 @@ app.post("/auth/trainer/logout", (req, res) => {
   res.json({ success: true });
 });
 
-//userlogout
 app.post("/api/logout", (req, res) => {
   req.session.destroy();
   res.json({ success: true });
 });
 
-//add athlete
 app.post("/trainer/athletes/add", async (req, res) => {
   if (!req.session.trainerId)
     return res.status(401).json({ error: "Not authenticated" });
@@ -425,7 +418,6 @@ app.get("/auth/whoop/callback", async (req, res) => {
     return res.status(400).send("Invalid state");
 
   try {
-    // 1) Exchange code for tokens
     const tokenRes = await axios.post(
       "https://api.prod.whoop.com/oauth/oauth2/token",
       new URLSearchParams({
@@ -439,8 +431,6 @@ app.get("/auth/whoop/callback", async (req, res) => {
     );
 
     const { access_token, refresh_token } = tokenRes.data;
-
-    // 2) Fetch WHOOP user profile
     const profileRes = await axios.get(
       "https://api.prod.whoop.com/developer/v1/user/profile/basic",
       { headers: { Authorization: `Bearer ${access_token}` } }
@@ -452,7 +442,6 @@ app.get("/auth/whoop/callback", async (req, res) => {
     const lastName = profileRes.data.last_name;
     const email = profileRes.data.email;
 
-    // 3) Upsert user in database
     const result = await pool.query(
       `INSERT INTO users (whoop_user_id, access_token, refresh_token, name, email)
    VALUES ($1, $2, $3, $4, $5)
@@ -468,7 +457,6 @@ app.get("/auth/whoop/callback", async (req, res) => {
       ]
     );
 
-    // 4) Save user ID in session
     req.session.userId = result.rows[0].id;
     console.log("User saved, session userId:", req.session.userId);
 
@@ -487,7 +475,6 @@ app.get("/api/status", async (req, res) => {
   try {
     const token = await getAccessToken(req.session.userId);
 
-    // Verify token is still valid
     await axios.get(
       "https://api.prod.whoop.com/developer/v1/user/profile/basic",
       { headers: { Authorization: `Bearer ${token}` } }
@@ -496,15 +483,12 @@ app.get("/api/status", async (req, res) => {
     res.json({ authenticated: true });
   } catch (err) {
     if (err?.response?.status === 401) {
-      // Token expired, destroy session
       req.session.destroy();
       return res.json({ authenticated: false, reason: "token_expired" });
     }
     res.json({ authenticated: true });
   }
 });
-
-///RECOVERY ENDPOINT
 
 app.get("/api/recovery", async (req, res) => {
   if (!req.session.userId) {
@@ -530,8 +514,6 @@ app.get("/api/recovery", async (req, res) => {
     });
   }
 });
-
-///SLEEP ENDPOINT
 
 app.get("/api/sleep", async (req, res) => {
   if (!req.session.userId) {
@@ -560,8 +542,6 @@ app.get("/api/sleep", async (req, res) => {
   }
 });
 
-///Strain endpoints
-
 app.get("/api/strain", async (req, res) => {
   if (!req.session.userId) {
     return res.status(401).json({ error: "Not authenticated" });
@@ -588,8 +568,6 @@ app.get("/api/strain", async (req, res) => {
     });
   }
 });
-
-///GOAL ENDPOINTS
 
 app.post("/api/goal", async (req, res) => {
   if (!req.session.userId) {
@@ -644,7 +622,6 @@ app.get("/api/workouts/recent", async (req, res) => {
   }
 });
 
-// MEAL CHAT
 app.post("/api/chat/meal", async (req, res) => {
   if (!req.session.userId)
     return res.status(401).json({ error: "Not authenticated" });
@@ -762,7 +739,6 @@ Guidelines:
   }
 });
 
-// WORKOUT CHAT
 app.post("/api/chat/workout", async (req, res) => {
   if (!req.session.userId)
     return res.status(401).json({ error: "Not authenticated" });
@@ -941,7 +917,6 @@ Guidelines:
   }
 });
 
-// WORKOUT LOG ENDPOINTS
 app.post("/api/workout-logs", async (req, res) => {
   if (!req.session.userId)
     return res.status(401).json({ error: "Not authenticated" });
@@ -997,7 +972,6 @@ app.get("/api/workout-logs/plan/:planId", async (req, res) => {
   res.json(result.rows.length === 0 ? null : result.rows[0]);
 });
 
-//edit logged workout
 app.put("/api/workout-logs/today", async (req, res) => {
   if (!req.session.userId)
     return res.status(401).json({ error: "Not authenticated" });
@@ -1010,7 +984,6 @@ app.put("/api/workout-logs/today", async (req, res) => {
   res.json({ success: true });
 });
 
-//PROFILE ENDPOINTS
 app.get("/api/profile", async (req, res) => {
   if (!req.session.userId) {
     return res.status(401).json({ error: "Not authenticated" });
@@ -1061,7 +1034,6 @@ app.post("/api/profile", async (req, res) => {
   res.json({ success: true });
 });
 
-// Save a plan (chat history)
 app.post("/api/plans", async (req, res) => {
   if (!req.session.userId) {
     return res.status(401).json({ error: "Not authenticated" });
@@ -1094,7 +1066,6 @@ app.post("/api/plans", async (req, res) => {
   res.json(result.rows[0]);
 });
 
-// Get all saved plans for the user
 app.get("/api/plans", async (req, res) => {
   if (!req.session.userId) {
     return res.status(401).json({ error: "Not authenticated" });
@@ -1112,7 +1083,6 @@ app.get("/api/plans", async (req, res) => {
   res.json(result.rows);
 });
 
-//Get today's plan (if any)
 app.get("/api/plans/today", async (req, res) => {
   if (!req.session.userId) {
     return res.status(401).json({ error: "Not authenticated" });
@@ -1135,7 +1105,6 @@ app.get("/api/plans/today", async (req, res) => {
   res.json(result.rows[0]);
 });
 
-// Get a single plan
 app.get("/api/plans/:id", async (req, res) => {
   if (!req.session.userId) {
     return res.status(401).json({ error: "Not authenticated" });
@@ -1170,7 +1139,6 @@ app.put("/api/plans/:id", async (req, res) => {
   res.json({ success: true });
 });
 
-// Delete a plan
 app.delete("/api/plans/:id", async (req, res) => {
   if (!req.session.userId) {
     return res.status(401).json({ error: "Not authenticated" });
@@ -1184,7 +1152,6 @@ app.delete("/api/plans/:id", async (req, res) => {
   res.json({ success: true });
 });
 
-// Rename a plan
 app.patch("/api/plans/:id", async (req, res) => {
   if (!req.session.userId) {
     return res.status(401).json({ error: "Not authenticated" });
@@ -1200,8 +1167,6 @@ app.patch("/api/plans/:id", async (req, res) => {
   res.json({ success: true });
 });
 
-///MEAL PLAN
-// Save meal plan
 app.post("/api/meal-plans", async (req, res) => {
   if (!req.session.userId)
     return res.status(401).json({ error: "Not authenticated" });
@@ -1215,7 +1180,6 @@ app.post("/api/meal-plans", async (req, res) => {
   res.json(result.rows[0]);
 });
 
-// Get today's meal plan
 app.get("/api/meal-plans/today", async (req, res) => {
   if (!req.session.userId)
     return res.status(401).json({ error: "Not authenticated" });
@@ -1230,7 +1194,6 @@ app.get("/api/meal-plans/today", async (req, res) => {
   res.json(result.rows.length === 0 ? null : result.rows[0]);
 });
 
-// Update meal plan messages
 app.put("/api/meal-plans/:id", async (req, res) => {
   if (!req.session.userId)
     return res.status(401).json({ error: "Not authenticated" });

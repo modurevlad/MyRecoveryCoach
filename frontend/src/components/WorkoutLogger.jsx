@@ -64,6 +64,7 @@ export default function WorkoutLogger({
   };
 
   const updateSet = (exIdx, setIdx, field, value) => {
+    if (value !== "" && Number(value) < 0) return;
     const updated = [...exercises];
     updated[exIdx].sets[setIdx][field] = value;
     setExercises(updated);
@@ -191,6 +192,7 @@ export default function WorkoutLogger({
                 <span className="set-label">Set {setIdx + 1}</span>
                 <input
                   type="number"
+                  min="0"
                   value={set.reps}
                   onChange={(e) =>
                     updateSet(exIdx, setIdx, "reps", e.target.value)
@@ -200,6 +202,7 @@ export default function WorkoutLogger({
                 />
                 <input
                   type="number"
+                  min="0"
                   value={set.weight_kg}
                   onChange={(e) =>
                     updateSet(exIdx, setIdx, "weight_kg", e.target.value)
@@ -277,6 +280,7 @@ export default function WorkoutLogger({
               <span className="set-label">Set {setIdx + 1}</span>
               <input
                 type="number"
+                min="0"
                 value={set.reps}
                 onChange={(e) =>
                   updateSet(exIdx, setIdx, "reps", e.target.value)
@@ -286,6 +290,7 @@ export default function WorkoutLogger({
               />
               <input
                 type="number"
+                min="0"
                 value={set.weight_kg}
                 onChange={(e) =>
                   updateSet(exIdx, setIdx, "weight_kg", e.target.value)

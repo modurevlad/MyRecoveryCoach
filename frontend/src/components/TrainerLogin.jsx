@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 export default function TrainerLogin({ onAuthenticated }) {
-  const [mode, setMode] = useState("login"); // "login" | "register"
+  const [mode, setMode] = useState("login");
   const [form, setForm] = useState({ email: "", name: "", password: "" });
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);

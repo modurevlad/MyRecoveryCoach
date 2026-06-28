@@ -106,7 +106,7 @@ export default function TrainerDashboard({ trainer, onLogout }) {
               { role: "assistant", content: fullReply },
             ]);
           } catch {
-            /* ignore malformed chunks */
+            console.log("Error streaming");
           }
         }
       }
